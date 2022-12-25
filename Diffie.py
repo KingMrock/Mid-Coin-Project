@@ -57,12 +57,20 @@ def bsgs(P: CurvePoint, f: Z_nZ):
             return n
 """
 
-def bsgs(e, f: Z_nZ):
+def bsgs(e: EllipticCurve, f: Z_nZ) -> int:
+    """
+    Implementation of the Baby Step Giant Step funtion from Wikipedia
+    Return the order of the curve
+
+    Caution: The Memory Cost of this function is O(sqrt(p)), where p is the order of the field Z/nZ
+    So it is unsuitable for large prime number
+    """
     m = int(f.p**(1/4))
     found_order = False
     while not found_order:
         P = get_element(e, f)
-        Ps = [j*P for j in range(1, m)]
+        print("Checking wih P=", P)
+        Ps = [j*P for j in range(0, m)]
 
         l = 1
         Q = (f.p+1)*P
@@ -70,37 +78,39 @@ def bsgs(e, f: Z_nZ):
         u = 0
         found = False
         while not found:
-            R = Q + (k*2*m)*P
-            for j in range(m-1):
+            R = Q + k*((2*m)*P)
+            for j in range(m):
                 if Ps[j] == R:
-                    u = f.p+1+2*m*k + j
+                    u = f.p+1+2*m*k - j
                     found = True
                 if -(Ps[j]) == R:
-                    u = f.p + 1 + 2 * m * k - j
+                    u = f.p + 1 + 2 * m * k + j
                     found = True
             k += 1
-        print("found")
         factors = factorize(u, dupl=False)
         i = 0
         print("u =", u, "u factors =", factors)
         while i < len(factors):
-            factor = int(factors[i])
-            if u % factor == 0 and isinstance((u//factor) * P, Ideal):
-                u = u//factor
+            factor = factors[i]
+            print(type(u//int(factor)))
+            if u % factor == 0 and isinstance((u//int(factor)) * P, Ideal):
+                u = u//int(factor)
             else:
                 i += 1
+        e.set_order(u)
+        e.set_generator(P)
         print("P:", P, "P order:", u, "\n")
+        print("Indeed u*p gives us", u*P)
         l = compute_lcm(l, u)
         ns = []
         for n in range(int(f.p + 1 - 2 * (f.p**(1/2))), int(f.p + 1 + 2 * (f.p**(1/2)))+1):
             if n % l == 0:
                 ns.append(n)
-        print(ns)
         if len(ns) == 1:
             return ns[0]
 
 
-def factorize(n, dupl = True):
+def factorize(n, dupl=True):
     factors = []
     p = 2
     while True:

@@ -8,6 +8,8 @@ class EllipticCurve(object):
         """
         Constructor of class curve
         """
+        self.__n = None  # Order of the curve
+        self.__g = None  # Generator Point of the Curve
         self.__a = a
         self.__b = b
 
@@ -28,6 +30,18 @@ class EllipticCurve(object):
 
     def get_b(self):
         return self.__b
+
+    def set_order(self, n):
+        self.__n = n
+
+    def set_generator(self, g):
+        self.__g = g
+
+    def get_order(self):
+        return self.__n
+
+    def get_generator(self):
+        return self.__g
 
     def __str__(self):
         return 'y^2 = x^3 + {}x + {}'.format(self.__a, self.__b)
