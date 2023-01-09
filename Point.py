@@ -41,7 +41,7 @@ class CurvePoint(Point):
 
         x_1, y_1, x_2, y_2 = self.get_x(), self.get_y(), other.get_x(), other.get_y()
 
-        if self == other:
+        if (x_1, y_1) == (x_2, y_2):
             if y_1 == 0:
                 return Ideal(self.get_curve())  # Tangent
             m = (3 * x_1 * x_1 + self.get_curve().get_a()) / (2 * y_1)
@@ -50,35 +50,34 @@ class CurvePoint(Point):
                 return Ideal(self.get_curve())
             m = (y_2 - y_1) / (x_2 - x_1)
         x_3 = m * m - x_2 - x_1
-        y_3 = m * (x_1 - x_3) - y_1
-        return CurvePoint(x_3, y_3, self.get_curve())
+        y_3 = m * (x_3 - x_1) + y_1
+        return CurvePoint(x_3, -y_3, self.get_curve())
 
     def __sub__(self, other):
         return self + -other
 
     def __mul__(self, n):
-        if not isinstance(n, int):
-            raise Exception("Can't scale point by non-integer value")
+        if not (isinstance(n, int)):
+            raise Exception("Can't scale a point by something which isn't an int!")
         else:
             if n < 0:
                 return -self * -n
             if n == 0:
-                return Ideal(self.__curve)
+                return Ideal(self.get_curve())
             else:
-                P = self
-                if n & 1 == 1:
-                    Q = self
-                else:
-                    Q = Ideal(self.__curve)
+                Q = self
+                R = self if n & 1 == 1 else Ideal(self.get_curve())
+
                 i = 2
                 while i <= n:
-                    P = P + P
+                    Q = Q + Q
 
                     if n & i == i:
-                        Q = Q + P
+                        R = Q + R
 
                     i = i << 1
-            return Q
+
+                return R
 
     def __rmul__(self, n):
         return self * n

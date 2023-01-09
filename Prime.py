@@ -16,9 +16,7 @@ def is_prime(n: int) -> bool:
     return True
 
 
-def generate_prime(bit_len, marsenne=False):
-    if marsenne:
-        return 2**32-1
+def generate_prime(bit_len):
     while True:
         a = random.randint(2**(bit_len-2), 2**(bit_len-1))
         a << 1

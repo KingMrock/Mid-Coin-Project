@@ -1,6 +1,8 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+from Field import Z_nZ
+
 
 
 class EllipticCurve(object):

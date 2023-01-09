@@ -5,6 +5,9 @@ from Prime import *
 import random
 import math
 
+
+
+
 def compute_lcm(x, y):
 
    # choose the greater number
@@ -69,7 +72,6 @@ def bsgs(e: EllipticCurve, f: Z_nZ) -> int:
     found_order = False
     while not found_order:
         P = get_element(e, f)
-        print("Checking wih P=", P)
         Ps = [j*P for j in range(0, m)]
 
         l = 1
@@ -89,18 +91,14 @@ def bsgs(e: EllipticCurve, f: Z_nZ) -> int:
             k += 1
         factors = factorize(u, dupl=False)
         i = 0
-        print("u =", u, "u factors =", factors)
         while i < len(factors):
             factor = factors[i]
-            print(type(u//int(factor)))
             if u % factor == 0 and isinstance((u//int(factor)) * P, Ideal):
                 u = u//int(factor)
             else:
                 i += 1
         e.set_order(u)
         e.set_generator(P)
-        print("P:", P, "P order:", u, "\n")
-        print("Indeed u*p gives us", u*P)
         l = compute_lcm(l, u)
         ns = []
         for n in range(int(f.p + 1 - 2 * (f.p**(1/2))), int(f.p + 1 + 2 * (f.p**(1/2)))+1):

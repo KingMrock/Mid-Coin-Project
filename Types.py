@@ -24,7 +24,7 @@ def memoize(func):
         if argTuple not in cache:
             cache[argTuple] = func(*args, **kwargs)
         else:
-            print("using memoized value")
+            print("using memoized value:", cache[argTuple])
         return cache[argTuple]
 
     memoized_func.cache = cache

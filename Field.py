@@ -47,7 +47,7 @@ class _FieldElement(object):
     def __rdiv__(self, other): return self.__rtruediv__(other)
 
 
-@memoize
+
 def Z_nZ(p):
     class Zn(_FieldElement):
         def __init__(self, n):

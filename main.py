@@ -1,4 +1,4 @@
-from Diffie import *
+from Curve_Tools import *
 from Prime import *
 from Curve import EllipticCurve
 from Point import CurvePoint
@@ -17,23 +17,31 @@ def main():
     """
 
     # Define the curve parameters
-    F = Z_nZ(generate_prime(18))
+    # F = Z_nZ(generate_prime(18))
+    F = Z_nZ(130127)
     a = F(0)
     b = F(7)
+    print("On utilise le corps Z/", F.p, "Z")
 
     # Create the curve object
     curve = EllipticCurve(a, b)
-    bsgs(curve, F)
+    # bsgs(curve, F)
+    curve.set_generator(CurvePoint(F(34623), F(7813), curve))
+    curve.set_order(130128)
 
-    print(curve.get_generator() * (curve.get_order()))
+    print(curve.get_generator() * curve.get_order())
+
+    print("Generator", curve.get_generator())
+    print("Print Curve order: ", curve.get_order())
 
     # Generate a random private key
-    privkey = randint(1, curve.get_order() - 1)
-
+    # privkey = randint(1, curve.get_order() - 1)
+    privkey = 40031
     # Calculate the public key
     pubkey = privkey * curve.get_generator()
     print("Private key:", privkey)
     print("Public key:", pubkey)
+
 
     # Choose a message to sign
     message = "Hello, world!"
