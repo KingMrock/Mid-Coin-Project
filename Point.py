@@ -15,6 +15,12 @@ class Point(object):
     def get_y(self):
         return self.__y
 
+    def set_x(self, x):
+        self.__x = x
+
+    def set_y(self, y):
+        self.__y = y
+
 
 class CurvePoint(Point):
     def __init__(self, x, y, curve):
@@ -26,6 +32,9 @@ class CurvePoint(Point):
 
     def get_curve(self):
         return self.__curve
+
+    def set_curve(self, curve):
+        self.__curve = curve
 
     def __neg__(self):
         return CurvePoint(self.get_x(), -self.get_y(), self.__curve)
@@ -83,10 +92,12 @@ class CurvePoint(Point):
         return self * n
 
     def __getstate__(self):
-        return self.get_x(), self.get_y()
+        return {'x': self.get_x(), 'y': self.get_y(), 'curve': self.get_curve()}
 
     def __setstate__(self, state):
-        self.__init__(state[0], state[1], self.__curve)
+        self.set_x(state['x'])
+        self.set_y(state['y'])
+        self.set_curve(state['curve'])
 
 
 class Ideal(CurvePoint):

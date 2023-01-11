@@ -1,4 +1,4 @@
-from Field import Z_nZ
+from Field import Zn
 from Hash import *
 from random import randint
 from Curve import *
@@ -12,7 +12,7 @@ def sign(curve, privkey, message, k=None):
     """
     # Hash the message
     h = Hash(message).hash
-    field = Z_nZ(curve.get_order())
+    p = curve.get_order()
     # Choose a random nonce k
     if k is None:
         k = randint(1, curve.get_order() - 1)
@@ -24,8 +24,7 @@ def sign(curve, privkey, message, k=None):
     r = int(point.get_x()) % curve.get_order()
     if r == 0:
         return sign(curve, privkey, message)
-    print(field(k), field(k).inverse(), field(k).inverse()*field(k) == field(1))
-    s = (h + ((privkey * r) % curve.get_order())) * (field(k).inverse().get_n()) % curve.get_order()
+    s = (h + ((privkey * r) % curve.get_order())) * (Zn(k, p).inverse().get_n()) % curve.get_order()
     if s == 0:
         return sign(curve, privkey, message)
 
@@ -38,10 +37,10 @@ def verify(curve, pubkey, message, signature):
     Verify a signature for a message using the public key and the curve.
     Returns True if the signature is valid, False otherwise.
     """
-    field = Z_nZ(curve.get_order())
+    p = curve.get_order()
     # Unpack the signature
     r, s = signature
-    s = field(s)
+    s = Zn(s, p)
 
     # Hash the message
     h = Hash(message).hash

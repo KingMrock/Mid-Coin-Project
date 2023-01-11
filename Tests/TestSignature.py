@@ -7,21 +7,19 @@ from Curve import EllipticCurve
 from Point import CurvePoint
 from Signature import *
 from random import randint
-from Field import Z_nZ
+from Field import Zn
 
 
 #Run test for fixed k
 def test_fixed_k(size = 1001):
     # Define the curve parameters
     #F = Z_nZ(130127)
-    F = Z_nZ(20333)
-    a = F(0)
-    b = F(7)
-    print("On utilise le corps Z/", F.p, "Z")
-
+    p = 20333
+    a = Zn(0, p)
+    b = Zn(7, p)
     # Create the curve object
     curve = EllipticCurve(a, b)
-    curve.set_generator(CurvePoint(F(15377), F(20134), curve))
+    curve.set_generator(CurvePoint(Zn(15377, p), Zn(20134, p), curve))
     curve.set_order(3389)
     #curve.set_generator(CurvePoint(F(7), F(42), curve))
     #curve.set_order(102)

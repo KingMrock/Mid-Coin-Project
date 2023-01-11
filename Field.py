@@ -47,74 +47,72 @@ class _FieldElement(object):
     def __rdiv__(self, other): return self.__rtruediv__(other)
 
 
-@memoize
-def Z_nZ(p):
-    class Zn(_FieldElement):
-        def __init__(self, n):
+
+class Zn(_FieldElement):
+
+    def __init__(self, n, p=None):
+        if p != None:
             try:
                 self.__n = n % p
+                self.p = p
             except:
                 raise TypeError("Can't convert {} to int".format(type(n).__name__))
+        else: self.__n = n # Int conversion
 
-        def get_n(self):
-            return self.__n
+    def get_n(self):
+        return self.__n
 
-        @typecheck
-        def __add__(self, other):
-            return Zn(self.get_n() + other.get_n())
+    @typecheck
+    def __add__(self, other):
+        return Zn(self.get_n() + other.get_n(), self.p)
 
-        @typecheck
-        def __sub__(self, other):
-            return Zn(self.get_n() - other.get_n())
+    @typecheck
+    def __sub__(self, other):
+        return Zn(self.get_n() - other.get_n(), self.p)
 
-        @typecheck
-        def __mul__(self, other):
-            return Zn(self.get_n() * other.get_n())
+    @typecheck
+    def __mul__(self, other):
+        return Zn(self.get_n() * other.get_n(), self.p)
 
-        def __neg__(self):
-            return Zn(-self.get_n())
+    def __neg__(self):
+        return Zn(-self.get_n(), self.p)
 
-        def __eq__(self, other):
-            return isinstance(other, Zn) and self.get_n() == other.get_n()
+    def __eq__(self, other):
+        return isinstance(other, Zn) and self.get_n() == other.get_n() and self.p == other.p
 
-        def __ne__(self, other):
-            return not isinstance(other, Zn) or self.get_n() != other.get_n()
+    def __ne__(self, other):
+        return not isinstance(other, Zn) or self.get_n() != other.get_n() or self.p != other.p
 
-        def __str__(self):
-            return str(self.get_n())
+    def __str__(self):
+        return str(self.get_n())
 
-        def __repr__(self):
-            return "{} (mod {})".format(self.get_n(), self.p)
+    def __repr__(self):
+        return "{} (mod {})".format(self.get_n(), self.p)
 
-        def __int__(self):
-            return self.get_n()
+    def __int__(self):
+        return self.get_n()
 
-        def __abs__(self):
-            return abs(self.get_n())
+    def __abs__(self):
+        return abs(self.get_n())
 
-        def __gcd__(self, other):
-            return self + other
-
-        def divmod(self, divisor):
-            q, r = divmod(self.get_n(), divisor.get_n())
-            return Zn(q), Zn(r)
+    def divmod(self, divisor):
+        q, r = divmod(self.get_n(), divisor.get_n())
+        return Zn(q, self.p), Zn(r, self.p)
 
 
-        def inverse(self):
-            x, y, d = euclide_extended_algo(self.get_n(), self.p)
-            return Zn(x)
+    def inverse(self):
+        x, y, d = euclide_extended_algo(self.get_n(), self.p)
+        return Zn(x, self.p)
 
-        def __hash__(self):
-            return hash(Zn.__name__)
+    def __hash__(self):
+        return hash(Zn.__name__)
 
-        def __getstate__(self):
-            return {'n' : self.get_n(), 'p' :self.p}
+    def __getstate__(self):
+        return {'n' : self.get_n(), 'p' :self.p}
 
-        def __setstate__(self, state):
-            self.__n = state['n']
-            self.p = state['p']
+    def __setstate__(self, state):
+        self.__n = state['n']
+        self.p = state['p']
 
-    Zn.p = p
-    Zn.prime = is_prime(p)
-    Zn.__name__ = "Z/{}Z".format(p)
-    return Zn
+
+

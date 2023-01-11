@@ -4,7 +4,7 @@ from Curve_Tools import *
 from Prime import *
 from Curve import EllipticCurve
 from Point import CurvePoint
-from Field import Z_nZ
+from Field import Zn
 from Signature import *
 from random import randint
 from User import *
@@ -13,18 +13,20 @@ from Block import *
 # Defining main function
 def main():
     """Simulate a small blockchain test with a few users and a few transactions"""
-    F = Z_nZ(20333)
-    a = F(0)
-    b = F(7)
+    p = 20333
+    a = Zn(0, p)
+    b = Zn(7, p)
     # Create the curve object
     curve = EllipticCurve(a, b)
-    curve.set_generator(CurvePoint(F(15377), F(20134), curve))
+    curve.set_generator(CurvePoint(Zn(15377, p), Zn(20134, p), curve))
     curve.set_order(3389)
 
     # Generate a random private key
     privkey = randint(1, curve.get_order() - 1)
     Alice = User("Alice", privkey, curve.get_generator() * privkey)
-    Bob = User("Bob", randint(1, curve.get_order() - 1), curve.get_generator() * privkey)
+    signature = sign(curve, privkey, "Hello, world!")
+    privkey = randint(1, curve.get_order() - 1)
+    Bob = User("Bob", privkey, curve.get_generator() * privkey)
 
     blockchain = BlockChain(curve)
     blockchain.add_user(Alice)
@@ -35,11 +37,14 @@ def main():
 
     blockchain.mine()
 
-    print(blockchain)
+    blockchain.print_chain()
 
-    blockchain.save_to_file()
+    blockchain.save_to_file("blockchain.txt")
 
 
+
+    blockload = BlockChain.load_from_file("blockchain.txt")
+    blockload.print_chain()
 # Using the special variable
 # __name__
 if __name__ == "__main__":

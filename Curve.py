@@ -1,7 +1,7 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from Field import Z_nZ
+from Field import Zn
 from Point import CurvePoint
 
 
@@ -29,6 +29,12 @@ class EllipticCurve(object):
 
     def get_a(self):
         return self.__a
+
+    def set_a(self, a):
+        self.__a = a
+
+    def set_b(self, b):
+        self.__b = b
 
     def get_b(self):
         return self.__b
@@ -89,13 +95,13 @@ class EllipticCurve(object):
         """
         This method is used for serialization
         """
-        return {'a': self.__a.__getstate__(), 'b': self.__b.__getstate__(), 'n': self.__n, 'g': self.__g}
+        return {'a': self.get_a(), 'b': self.get_b(), 'n': self.get_order(), 'g': self.get_generator()}
 
     def __setstate__(self, state):
         """
         This method is used for deserialization
         """
-        self.__a = Z_nZ(state['a']['n'], state['a']['p'])
-        self.__b = Z_nZ(state['b']['n'], state['b']['p'])
-        self.__n = state['n']
-        self.__g = CurvePoint(state['g']['x'], state['g']['y'], self)
+        self.set_a(state['a'])
+        self.set_b(state['b'])
+        self.set_order(state['n'])
+        self.set_generator(state['g'])

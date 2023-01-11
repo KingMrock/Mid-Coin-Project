@@ -60,7 +60,7 @@ def bsgs(P: CurvePoint, f: Z_nZ):
             return n
 """
 
-def bsgs(e: EllipticCurve, f: Z_nZ) -> int:
+def bsgs(e: EllipticCurve, f: Zn) -> int:
     """
     Implementation of the Baby Step Giant Step funtion from Wikipedia
     Return the order of the curve
@@ -241,7 +241,7 @@ def Cipolla(n: int, f: Z_nZ):
 
 
 
-def get_element(e: EllipticCurve, f: Z_nZ)->CurvePoint:
+def get_element(e: EllipticCurve, f: Zn)->CurvePoint:
     found = False
     while not found:
         x_int = random.randint(0, f.p)
