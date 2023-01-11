@@ -138,6 +138,9 @@ class BlockChain (object):
         new_block = Block(previous_hash, self.pending_transactions)
         new_block.miner = miner
         miner.balance += 10
+        for transaction in self.pending_transactions:
+            transaction[0].sender.balance -= transaction[0].amount
+            transaction[0].receiver.balance += transaction[0].amount
         self.pending_transactions = []
         return self.add_block(new_block)
 
