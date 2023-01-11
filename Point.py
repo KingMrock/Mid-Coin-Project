@@ -82,6 +82,12 @@ class CurvePoint(Point):
     def __rmul__(self, n):
         return self * n
 
+    def __getstate__(self):
+        return self.get_x(), self.get_y()
+
+    def __setstate__(self, state):
+        self.__init__(state[0], state[1], self.__curve)
+
 
 class Ideal(CurvePoint):
     """

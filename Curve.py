@@ -2,7 +2,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from Field import Z_nZ
-
+from Point import CurvePoint
 
 
 class EllipticCurve(object):
@@ -84,3 +84,18 @@ class EllipticCurve(object):
                     fontsize=40, color='gray', alpha=0.3,
                     ha='center', va='center', rotation=30)
         figure.show()
+
+    def __getstate__(self):
+        """
+        This method is used for serialization
+        """
+        return {'a': self.__a.__getstate__(), 'b': self.__b.__getstate__(), 'n': self.__n, 'g': self.__g}
+
+    def __setstate__(self, state):
+        """
+        This method is used for deserialization
+        """
+        self.__a = Z_nZ(state['a']['n'], state['a']['p'])
+        self.__b = Z_nZ(state['b']['n'], state['b']['p'])
+        self.__n = state['n']
+        self.__g = CurvePoint(state['g']['x'], state['g']['y'], self)

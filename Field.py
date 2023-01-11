@@ -47,7 +47,7 @@ class _FieldElement(object):
     def __rdiv__(self, other): return self.__rtruediv__(other)
 
 
-
+@memoize
 def Z_nZ(p):
     class Zn(_FieldElement):
         def __init__(self, n):
@@ -106,6 +106,13 @@ def Z_nZ(p):
 
         def __hash__(self):
             return hash(Zn.__name__)
+
+        def __getstate__(self):
+            return {'n' : self.get_n(), 'p' :self.p}
+
+        def __setstate__(self, state):
+            self.__n = state['n']
+            self.p = state['p']
 
     Zn.p = p
     Zn.prime = is_prime(p)

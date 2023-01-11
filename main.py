@@ -1,3 +1,5 @@
+import json
+
 from Curve_Tools import *
 from Prime import *
 from Curve import EllipticCurve
@@ -5,58 +7,37 @@ from Point import CurvePoint
 from Field import Z_nZ
 from Signature import *
 from random import randint
+from User import *
+from Block import *
 
 # Defining main function
 def main():
-    """
-    # Find a generator point on the curve, output order of the curve
-    Field = Z_nZ(generate_prime(32))
-    print("On utilise le corps Z/", Field.p, "Z")
-    curve = EllipticCurve(a=Field(0), b=Field(7))
-    print(bsgs(curve, Field))
-    """
-
-    # Define the curve parameters
-    # F = Z_nZ(generate_prime(18))
-    F = Z_nZ(130127)
+    """Simulate a small blockchain test with a few users and a few transactions"""
+    F = Z_nZ(20333)
     a = F(0)
     b = F(7)
-    print("On utilise le corps Z/", F.p, "Z")
-
     # Create the curve object
     curve = EllipticCurve(a, b)
-    # bsgs(curve, F)
-    curve.set_generator(CurvePoint(F(34623), F(7813), curve))
-    curve.set_order(130128)
-
-    print(curve.get_generator() * curve.get_order())
-
-    print("Generator", curve.get_generator())
-    print("Print Curve order: ", curve.get_order())
+    curve.set_generator(CurvePoint(F(15377), F(20134), curve))
+    curve.set_order(3389)
 
     # Generate a random private key
-    # privkey = randint(1, curve.get_order() - 1)
-    privkey = 40031
-    # Calculate the public key
-    pubkey = privkey * curve.get_generator()
-    print("Private key:", privkey)
-    print("Public key:", pubkey)
+    privkey = randint(1, curve.get_order() - 1)
+    Alice = User("Alice", privkey, curve.get_generator() * privkey)
+    Bob = User("Bob", randint(1, curve.get_order() - 1), curve.get_generator() * privkey)
 
+    blockchain = BlockChain(curve)
+    blockchain.add_user(Alice)
+    blockchain.add_user(Bob)
+    blockchain.stake.stake_coins(Alice, 2)
 
-    # Choose a message to sign
-    message = "Hello, world!"
+    blockchain.make_transaction(Alice.pubkey, Bob.pubkey, 1)
 
-    # Sign the message
-    signature = sign(curve, privkey, message)
-    print("Signature", signature)
+    blockchain.mine()
 
-    # Verify the signature
-    is_valid = verify(curve, pubkey, message, signature)
+    print(blockchain)
 
-    print("Signature is valid:", is_valid)
-
-
-
+    blockchain.save_to_file()
 
 
 # Using the special variable
