@@ -108,6 +108,12 @@ class BlockChain (object):
                 return user
         return None
 
+    def get_user_by_name(self, name):
+        for user in self.users:
+            if user.name == name:
+                return user
+        return None
+
     @classmethod
     def check_validity(cls, chain):
         previous_block = chain[0]

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <style>
+      /* Add custom CSS for the gradient background and other stylings */
+
+
+      .main-view {
+            background: linear-gradient(to bottom, #1c1c1c, #2b2b2b);
+            background-size: cover;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+      }
+
+      .btn {
+            background-color: #0096c9;
+            color: white;
+            font-weight: bold;
+            border-radius: 20px;
+            padding: 10px 20px;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+
+      .btn:hover {
+            background-color: #007e9e;
+            color: white;
+            cursor: pointer;
+        }
+
+        <img src="public_key_qr.jpg" alt="QR code for public key">
+
+
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-dark bg-dark">
+      <a class="navbar-brand" href="#">MidlCoin</a>
+      <form class="form-inline" method="post" action="/logout">
+        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Logout</button>
+      </form>
+    </nav>
+    <div class="d-flex flex-column main-view">
+      <h1>Welcome, {{username}}</h1>
+      <p>Balance: {{balance}}</p>
+      <p>Public Key: {{pubkey}}</p>
+      <button class="btn btn-primary" onclick="displayRecentTransactions()">Recent Transactions</button>
+      <button class="btn btn-primary" onclick="downloadBlockchain()">Download Blockchain</button>
+      <button class="btn btn-primary" onclick="makeTransaction()">Make Transaction</button>
+    </div>
+
+    <script>
+      function displayRecentTransactions() {
+        // Code to display recent transactions involving the user
+      }
+      function downloadBlockchain() {
+        // Code to download the blockchain
+      }
+      function makeTransaction() {
+        // Code to make a transaction
+      }
+    </script>
+  </body>
+</html>
