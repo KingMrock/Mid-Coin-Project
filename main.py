@@ -22,18 +22,18 @@ def main():
     curve.set_order(3389)
 
     # Generate a random private key
-    privkey = randint(1, curve.get_order() - 1)
-    Alice = User("Alice", privkey, curve.get_generator() * privkey)
-    signature = sign(curve, privkey, "Hello, world!")
-    privkey = randint(1, curve.get_order() - 1)
-    Bob = User("Bob", privkey, curve.get_generator() * privkey)
+    privkey_alice = randint(1, curve.get_order() - 1)
+    Alice = User("Alice", curve.get_generator() * privkey_alice)
+    privkey_bob = randint(1, curve.get_order() - 1)
+    Bob = User("Bob", curve.get_generator() * privkey_bob)
 
     blockchain = BlockChain(curve)
     blockchain.add_user(Alice)
     blockchain.add_user(Bob)
     blockchain.stake.stake_coins(Alice, 2)
 
-    blockchain.make_transaction(Alice.pubkey, Bob.pubkey, 1)
+    blockchain.make_transaction(Alice.pubkey, privkey_alice, Bob.pubkey, 1)
+    blockchain.make_transaction(Bob.pubkey, privkey_bob, Alice.pubkey, 4)
 
     blockchain.mine()
 

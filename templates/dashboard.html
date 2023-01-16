@@ -3,7 +3,6 @@
   <head>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
     <style>
-      /* Add custom CSS for the gradient background and other stylings */
 
 
       .main-view {
@@ -32,14 +31,14 @@
             cursor: pointer;
         }
 
-        <img src="public_key_qr.jpg" alt="QR code for public key">
+
 
 
     </style>
   </head>
   <body>
     <nav class="navbar navbar-dark bg-dark">
-      <a class="navbar-brand" href="#">MidlCoin</a>
+      <a class="navbar-brand" href="#">Mid£Coin</a>
       <form class="form-inline" method="post" action="/logout">
         <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Logout</button>
       </form>
@@ -47,22 +46,12 @@
     <div class="d-flex flex-column main-view">
       <h1>Welcome, {{username}}</h1>
       <p>Balance: {{balance}}</p>
+      <img src="/qr_code_generate" alt="QR Code">
       <p>Public Key: {{pubkey}}</p>
-      <button class="btn btn-primary" onclick="displayRecentTransactions()">Recent Transactions</button>
-      <button class="btn btn-primary" onclick="downloadBlockchain()">Download Blockchain</button>
-      <button class="btn btn-primary" onclick="makeTransaction()">Make Transaction</button>
+      <a href="/" class="btn btn-primary"> Recent Transactions</a>
+      <a href="/" class="btn btn-primary">Download The Blockchain</a>
+      <a href="/send" class="btn btn-primary">Make Transaction</a>
+      <a href="/" class="btn btn-primary">Staking</a>
     </div>
-
-    <script>
-      function displayRecentTransactions() {
-        // Code to display recent transactions involving the user
-      }
-      function downloadBlockchain() {
-        // Code to download the blockchain
-      }
-      function makeTransaction() {
-        // Code to make a transaction
-      }
-    </script>
   </body>
 </html>

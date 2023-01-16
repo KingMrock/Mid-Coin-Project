@@ -55,7 +55,7 @@ class Block (object):
             transactions += (str(transaction[0]) + "\n")
         return "Block Hash:" + str(self.hash) + \
                "\nPrevious Hash: " + str(self.previous_hash) + \
-               "\nTransaction in this block:" + transactions + \
+               "\nTransaction in this block:\n" + transactions + \
                "Mined by: " + str(self.miner)
 
     def __eq__(self, other):
@@ -87,14 +87,17 @@ class BlockChain (object):
         else:
             previous_hash = self.blocks[-1].hash
 
+        print("Here")
         # Check if the block's transactions are valid and signed by the correct user
         if not self.verify_signed_transactions(block.transactions):
             return False
 
+        print("here")
         # Check if the current block points to the correct previous block
         if block.previous_hash != previous_hash:
             return False
 
+        print("Block added to the chain!")
         # If all checks pass, add the block to the chain
         self.blocks.append(block)
         return True
@@ -144,6 +147,8 @@ class BlockChain (object):
         new_block = Block(previous_hash, self.pending_transactions)
         new_block.miner = miner
         miner.balance += 10
+        print(str(new_block))
+        self.add_block(new_block)
         for transaction in self.pending_transactions:
             transaction[0].sender.balance -= transaction[0].amount
             transaction[0].receiver.balance += transaction[0].amount
@@ -162,20 +167,19 @@ class BlockChain (object):
                 # mine the transactions
                 self.mine()
 
-    def make_transaction(self, sender, receiver, amount):
+    def make_transaction(self, sender, privkey, receiver, amount):
         by = self.get_user(sender)
         to = self.get_user(receiver)
         if by is None or to is None:
             return False
         transaction = Transaction(by, to, amount)
-        signature = sign(self.curve, by.privkey, str(transaction))
+        signature = sign(self.curve, privkey, str(transaction))
         self.add_transaction((transaction, signature))
 
     def __str__(self):
         return str(self.blocks)
 
     def print_chain(self):
-        s = ""
         for block in self.blocks:
             print(str(block)+"\n")
 
