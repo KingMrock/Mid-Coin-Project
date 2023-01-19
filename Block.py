@@ -4,39 +4,10 @@ import time
 from typing import Dict, Tuple, List
 
 from Curve import EllipticCurve
-from User import *
+from Blockchain_Tools import *
 from Hash import *
 from Signature import verify, sign
 import pickle
-
-
-"""
-Transactions are stored in a list of tuples (sender, receiver, amount)
-"""
-class Transaction:
-    def __init__(self, sender, receiver, amount):
-        self.sender = sender
-        self.receiver = receiver
-        self.amount = amount
-        if not Transaction.is_valid(self):
-            raise ValueError("Invalid transaction.")
-
-    def __str__(self):
-        return str(self.sender) + " -> " + str(self.receiver) + " : " + str(self.amount) + " MidlCoin"
-
-    def __eq__(self, other):
-        return self.sender == other.sender and self.receiver == other.receiver and self.amount == other.amount
-
-    @classmethod
-    def is_valid(cls, transaction):
-        return transaction.sender.balance >= transaction.amount
-
-    def __getstate__(self):
-        return {'sender': self.sender, 'receiver': self.receiver, 'amount': self.amount }
-
-    def __setstate__(self, state):
-        self.__init__(state['sender'], state['receiver'], state['amount'])
-
 
 class Block (object):
     def __init__(self, previous_hash: str, transactions: List[Tuple[Transaction, Tuple[int, int]]]):
@@ -45,6 +16,7 @@ class Block (object):
         self.data = str(previous_hash) + str(transactions)
         self.hash = str(Hash(self.data))
         self.miner = None
+        self.stop_event = threading.Event()
 
     def calculate_hash(self):
         return str(Hash(self.data))
@@ -52,7 +24,7 @@ class Block (object):
     def __str__(self):
         transactions = ""
         for transaction in self.transactions:
-            transactions += (str(transaction[0]) + "\n")
+            transactions += (str(transaction[0]) + " Signature: " + str(transaction[1]) + "\n")
         return "Block Hash:" + str(self.hash) + \
                "\nPrevious Hash: " + str(self.previous_hash) + \
                "\nTransaction in this block:\n" + transactions + \
@@ -77,33 +49,19 @@ class BlockChain (object):
         self.users = []
         self.pending_transactions = []
         self.stake = Staking()
-        #threading.Thread(target=self.start_timer).start()
-
-    def add_block(self, block: Block):
-        """Add a block to the chain."""
-        # Check if this is the first block being added to the chain
-        if len(self.blocks) == 0:
-            previous_hash = "BLOCKCHAIN_START"
-        else:
-            previous_hash = self.blocks[-1].hash
-
-        print("Here")
-        # Check if the block's transactions are valid and signed by the correct user
-        if not self.verify_signed_transactions(block.transactions):
-            return False
-
-        print("here")
-        # Check if the current block points to the correct previous block
-        if block.previous_hash != previous_hash:
-            return False
-
-        print("Block added to the chain!")
-        # If all checks pass, add the block to the chain
-        self.blocks.append(block)
-        return True
+        god = User("God", curve.get_generator() * 1)
+        god.balance = 500
+        self.users.append(god)
+        self.stop_event = threading.Event()
+        self.thread = threading.Thread(target=self.start_timer)
+        self.thread.start()
 
     def add_user(self, user: User):
         self.users.append(user)
+        self.stake.add_user(user)
+        if self.get_user_by_name("God").balance > 0:
+            self.make_transaction(self.get_user_by_name("God").pubkey, 1, user.pubkey, 5)
+            self.mine()
 
     def get_user(self, public_key):
         for user in self.users:
@@ -144,16 +102,26 @@ class BlockChain (object):
             previous_hash = "BLOCKCHAIN_START"
         else:
             previous_hash = self.blocks[-1].hash
+
+        for transaction in self.pending_transactions:
+            if not self.verify_signed_transaction(transaction):
+                self.pending_transactions.remove(transaction)
+                transaction[0].status = "Denied"
+            else:
+                transaction[0].sender.balance -= transaction[0].amount
+                transaction[0].receiver.balance += transaction[0].amount
+                transaction[0].status = "Complete"
+
         new_block = Block(previous_hash, self.pending_transactions)
         new_block.miner = miner
-        miner.balance += 10
-        print(str(new_block))
-        self.add_block(new_block)
-        for transaction in self.pending_transactions:
-            transaction[0].sender.balance -= transaction[0].amount
-            transaction[0].receiver.balance += transaction[0].amount
+
+        if miner is not self.get_user_by_name("God"):
+            miner.balance += 10
+        self.blocks.append(new_block)
         self.pending_transactions = []
-        return self.add_block(new_block)
+        #Save the blockchain
+        self.save_to_file('blockchain.txt')
+        return new_block
 
     def add_transaction(self, transaction_signed):
         self.pending_transactions.append(transaction_signed)
@@ -161,39 +129,74 @@ class BlockChain (object):
             self.mine()
 
     def start_timer(self):
-        while True:
-            time.sleep(10)
+        """
+        This function is used to mine a block every 3 seconds
+        """
+        while self.stop_event.is_set():
+            time.sleep(3)
             if len(self.pending_transactions) > 0:
                 # mine the transactions
                 self.mine()
 
     def make_transaction(self, sender, privkey, receiver, amount):
+        """
+        Creates a transaction and signs it with the private key of the sender
+        """
         by = self.get_user(sender)
         to = self.get_user(receiver)
         if by is None or to is None:
-            return False
+            raise Exception("User not found")
         transaction = Transaction(by, to, amount)
+        if not Transaction.is_valid(transaction):
+            raise Exception("Transaction is not valid")
         signature = sign(self.curve, privkey, str(transaction))
         self.add_transaction((transaction, signature))
+        return transaction
 
     def __str__(self):
         return str(self.blocks)
 
     def print_chain(self):
+        """
+        Prints the blockchain in a readable format block by block
+        """
+        print("Blockchain: ", self.chain_to_string())
+
+
+    def chain_to_string(self):
+        """
+        Returns the blockchain as a string
+        """
+        chain = ""
         for block in self.blocks:
-            print(str(block)+"\n")
+            chain += str(block) + "\n\n"
+        return chain
 
     def verify_signed_transactions(self, signed_transactions):
+        """
+        Verifies a list of signed transactions
+        """
         for signed_transaction in signed_transactions:
-            if not Transaction.is_valid(signed_transaction[0]):
-                return False
-            if not verify(self.curve, signed_transaction[0].sender.pubkey, str(signed_transaction[0]), signed_transaction[1]):
+            if self.verify_signed_transaction(signed_transaction) is False:
                 return False
         return True
 
-    def save_to_file(blockchain, file_path):
+    def verify_signed_transaction(self, signed_transaction):
+        """
+        Verifies a signed transaction by checking if the signature is valid and if the sender has enough balance
+        """
+        if not Transaction.is_valid(signed_transaction[0]):
+            return False
+        if not verify(self.curve, signed_transaction[0].sender.pubkey, str(signed_transaction[0]), signed_transaction[1]):
+            return False
+        return True
+
+    def save_to_file(self, file_path):
+        """
+        Save the blockchain to a file in pickle format (binary) more efficient
+        """
         with open(file_path, 'wb') as f:
-            pickle.dump(blockchain, f)
+            pickle.dump(self, f)
 
     @classmethod
     def load_from_file(cls, file_path):
@@ -203,44 +206,81 @@ class BlockChain (object):
         with open(file_path, 'rb') as f:
             return pickle.load(f)
 
-class Staking:
-    def __init__(self):
-        self.users = {}
-        self.total_staked_coins = 0
 
-    def stake_coins(self, user: User, amount: int, unstaking_period: int = 100):
-        """Stake a given amount of coins."""
-        if amount > user.balance:
-            raise ValueError("Insufficient balance.")
-        if user not in self.users.keys():
-            self.users[user] = 0
-        self.users[user] += amount
-        self.total_staked_coins += amount
-        user.balance -= amount
-        self.update_staking_power(user)
-        user.unstaking_period = unstaking_period
+    def get_last_x_transaction(self, user, number):
+        """
+        Get the last x transactions of a user
+        """
+        transactions = []
+        for block in reversed(self.blocks):
+            for transaction in reversed(block.transactions):
+                if transaction[0].sender == user or transaction[0].receiver == user:
+                    transactions.append(transaction)
+                    if len(transactions) == number:
+                        return transactions
+        return transactions
 
-    def update_staking_power(self, user: User):
-        """Update the user's staking power based on the amount of staked coins."""
-        user.staking_power = self.users[user] / self.total_staked_coins
+    @classmethod
+    def load_from_text(cls, file_path):
+        """
+        Load the blockchain from a file reading and adding users and blocks
+        """
+        blockchain = BlockChain()
+        with open(file_path, 'r') as file:
+            current_block = None
+            for line in file:
+                if line.startswith("Block Hash:"):
+                    current_block = Block()
+                    current_block.hash = line.strip().split(":")[1]
+                    blockchain.blocks.append(current_block)
+                elif line.startswith("Previous Hash:"):
+                    current_block.previous_hash = line.strip().split(":")[1]
+                elif line.startswith("Transaction in this block:"):
+                    pass
+                elif line.startswith("Mined by:"):
+                    miner = line.strip().split(":")[1]
+                else:
+                    transaction = line.strip().split(":")
+                    sender = blockchain.get_user_by_name(transaction[0])
+                    receiver = blockchain.get_user_by_name(transaction[1])
+                    amount = float(transaction[2])
+                    blockchain.add_transaction(Transaction(sender, receiver, amount))
+        return blockchain
 
-    def unstake_coins(self, user: User, amount: int):
-        """Unstake a given amount of coins."""
-        if amount > self.users[user]:
-            raise ValueError("Insufficient staked coins.")
-        self.users[user] -= amount
-        self.total_staked_coins -= amount
-        user.balance += amount
-        self.update_staking_power(user)
 
-    def __setstate__(self, state):
-        self.users = state['users']
-        self.total_staked_coins = state['total_staked_coins']
+    def stop_timer(self):
+        """
+        Stops the timer thread
+        """
+        self.stop_event.clear()
+        self.thread.join()
+
+
+    def print_users(self):
+        """
+        Prints the users in the blockchain
+        """
         for user in self.users:
-            self.update_staking_power(user)
+            print(str(user) + " " + str(user.balance))
+
 
     def __getstate__(self):
-        return {'users': self.users, 'total_staked_coins': self.total_staked_coins}
+        """
+        Used to pickle the blockchain
+        """
+        state = self.__dict__.copy()
+        del state['thread']
+        del state['stop_event']
+        return state
 
+    def __setstate__(self, state):
+        """
+        Used to unpickle the blockchain
+        """
+        self.__dict__.update(state)
+        self.thread = threading.Thread(target=self.start_timer)
+        self.stop_event = threading.Event()
+        self.stop_event.set()
+        self.thread.start()
 
 

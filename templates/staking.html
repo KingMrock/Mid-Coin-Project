@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <style>
+
+
+      .main-view {
+            background: linear-gradient(to bottom, #1c1c1c, #2b2b2b);
+            background-size: cover;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+      }
+
+      .btn {
+            background-color: #0096c9;
+            color: white;
+            font-weight: bold;
+            border-radius: 20px;
+            padding: 10px 20px;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+
+      .btn:hover {
+            background-color: #007e9e;
+            color: white;
+            cursor: pointer;
+        }
+
+
+
+
+
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-dark bg-dark">
+      <a class="navbar-brand" href="#">Mid£Coin</a>
+      <form class="form-inline" method="get" action="/dashboard">
+        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Dashboard</button>
+      </form>
+      <form class="form-inline" method="post" action="/logout">
+        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Logout</button>
+      </form>
+    </nav>
+    <div class="d-flex flex-column main-view">
+      <h1>Welcome, {{username}}</h1>
+      <p>Balance: {{balance}} Mid£Coin</p>
+      <p>You have currently {{staked_amount}} Staked Coin</p>
+      <p>Staking Rate: {{staking_rate * 100}}%</p>
+      <p>Unstaking Status</p>
+      <div id="countdown"></div>
+      <div class="text-center">
+      <form method="POST" action="{{ url_for('staking') }}">
+        <label>Enter the number of coins you want to stake or unstake</label>
+        <br>
+        <input type="text" name="stake_amount">
+        <br>
+        <button class="btn stake-button" type="submit" name="stake" value="Stake" >Stake</button>
+        <button class="btn stake-button" type="submit" name="unstake" value="Unstake">Unstake</button>
+      </form>
+    </div>
+    </div>
+  </body>
+
+<script>
+    var timeLeft = {{staking_period}}*1000;
+    var timer = setInterval(function() {
+    console.log(timeLeft)
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            document.getElementById("countdown").innerHTML = "You can unstake now";
+            var element = document.getElementsByClassName("stake-button")
+            for (var i = 0; i < element.length; i++) {
+                element[i].style.backgroundColor = "#0096c9";
+                element[i].disabled = false;
+            }
+        } else {
+            var seconds = Math.floor((timeLeft / 1000) % 60);
+            var minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
+            var hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+            var days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+            document.getElementById("countdown").innerHTML = days + " days " + hours + " hours " + minutes + " minutes " + seconds + " seconds ";
+            var element = document.getElementsByClassName("stake-button")
+            for (var i = 0; i < element.length; i++) {
+                element[i].style.backgroundColor = "red";
+                element[i].disabled = true;
+            }
+            timeLeft -= 1000;
+        }
+    }, 1000);
+</script>
+
+
+</html>

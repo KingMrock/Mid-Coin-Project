@@ -1,12 +1,21 @@
+import time
+
 from flask import Flask, request, render_template, make_response, jsonify, redirect, session, url_for, flash, \
     send_from_directory, send_file
 from Block import *
 import qrcode
 from PIL import Image
+from Field import Zn
+import asyncio
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+socket = SocketIO(app)
+
+
 blockchain = BlockChain.load_from_file("blockchain.txt")
+blockchain.print_users()
 
 
 def generate_qr_code(public_key):
@@ -74,17 +83,23 @@ def privatekey():
 def login():
     if request.method == "POST":
         username = request.form['username']
-        temp = request.form['recipient']
+        temp = request.form['privkey']
         try:
-            recipient = int(temp)
+            private_key = int(temp)
+            public_key = blockchain.curve.get_generator() * private_key
         except:
             flash("Invalid private key")
-        if blockchain.get_user(recipient) is not None:
-            session["username"] = username
-            session.pop("privkey", None)
-            return redirect(url_for('dashboard'))
+        current_user = blockchain.get_user_by_name(username)
+        if current_user is not None:
+            if current_user.pubkey == public_key:
+                session["username"] = username
+                session["pubkey"] = str(public_key)
+                session["privkey"] = private_key
+                return redirect(url_for('dashboard'))
+            else:
+                flash("Wrong private key")
         else:
-            flash("Invalid username or private key")
+            flash("Invalid username")
             return redirect(url_for('login'))
     else:
         return render_template("login.html")
@@ -108,8 +123,6 @@ def dashboard():
         if request.method == "POST":
             if "send" in request.form:
                 return redirect(url_for('send'))
-            elif "receive" in request.form:
-                return redirect(url_for('receive'))
             elif "transactions" in request.form:
                 return redirect(url_for('transactions'))
             elif "blockchain" in request.form:
@@ -125,31 +138,45 @@ def dashboard():
 
 
 @app.route('/send', methods=['POST','GET'])
-def send():
+def send(transaction_data=None):
     if "username" in session:
+        if "latest_transaction" in session:
+            latest_transaction = session["latest_transaction"]
+        else:
+            latest_transaction = None
         if request.method == "POST":
             username = session["username"]
             amount = request.form['amount']
-            recipient = request.form['recipient']
+            x = int(request.form['x'])
+            y = int(request.form['y'])
+            p = blockchain.curve.get_a().p
             try:
                 amount = int(amount)
             except:
                 flash("Invalid amount")
                 return redirect(url_for('send'))
+            try:
+                recipient = CurvePoint(Zn(x, p), Zn(y, p), blockchain.curve)
+            except:
+                flash("Invalid Recipient")
+                return redirect(url_for('send'))
             if blockchain.get_user_by_name(username).balance < amount:
                 flash("Insufficient funds")
-                return redirect(url_for('send'))
-            if blockchain.get_user_by_name(recipient) is None:
+            elif blockchain.get_user(recipient) is None:
                 flash("Invalid recipient")
-                return redirect(url_for('send'))
-            if blockchain.get_user_by_name(username).balance < amount:
-                flash("Insufficient funds")
-                return redirect(url_for('send'))
-            blockchain.send(username, recipient, amount)
-            flash("Transaction successful")
-            return redirect(url_for('dashboard'))
+            else:
+                transaction = blockchain.make_transaction(blockchain.get_user_by_name(username).pubkey,
+                                        session["privkey"], recipient, amount)
+                print(str(transaction))
+                flash("Transaction sent")
+                session["latest_transaction"] = str(transaction)
+                return redirect(url_for('send',))
+
+            return redirect(url_for('send'))
         else:
-            return render_template("send.html")
+            return render_template("send.html",
+                                   balance=blockchain.get_user_by_name(session["username"]).balance,
+                                   username=session["username"], transaction_data=latest_transaction)
     else:
         return redirect(url_for('homepage'))
 
@@ -159,16 +186,100 @@ def send():
 def qr_scan():
     return render_template("qr_scan.html")
 
-@app.route('/qr_code', methods=['POST'])
+@app.route('/qr_code', methods=['POST', 'GET'])
 def qr_code():
     qr_code_data = request.form["qr_code_scan"]
-    x, y = qr_code_data.split(";")
-    x = int(x[3:])
-    y = int(y[3:])
+    x, y = read_string_coordinates(qr_code_data)
     session["x"] = x
     session["y"] = y
 
     return redirect(url_for('send'))
 
+def read_string_coordinates(string):
+    x, y = string.split(";")
+    x = int(x[3:])
+    y = int(y[3:])
+    return x, y
+
+@app.route('/latest_transactions', methods=['POST','GET'])
+def latest_transactions():
+    if "username" in session:
+        if request.method == "POST":
+            if "dashboard" in request.form:
+                return redirect(url_for('dashboard'))
+            elif "logout" in request.form:
+                return redirect(url_for('logout'))
+            elif "num_transaction" in request.form:
+                num_transaction = request.form["num_transaction"]
+                try:
+                    num_transaction = int(num_transaction)
+                except:
+                    flash("Invalid number of transactions")
+                    return redirect(url_for('latest_transactions'))
+                transactions_signed = blockchain.get_last_x_transaction(blockchain.get_user_by_name(session["username"]),num_transaction)
+                transactions = []
+                for transaction in transactions_signed:
+                    transaction = transaction[0]
+                    transactions.append({'sender': transaction.sender.name, 'amount': transaction.amount, 'receiver': transaction.receiver.name})
+                return render_template("latest_transactions.html", balance=blockchain.get_user_by_name(session["username"]).balance,
+                                       username=session["username"],
+                                       transactions=transactions)
+        else:
+            return render_template("latest_transactions.html", balance=blockchain.get_user_by_name(session["username"]).balance,
+                                       username=session["username"])
+    else:
+        return redirect(url_for('homepage'))
+
+
+@app.route('/download-blockchain')
+def download_blockchain():
+    blockchain_string = blockchain.chain_to_string()
+    response = make_response(blockchain_string)
+    response.headers["Content-Disposition"] = "attachment; filename=blockchain.txt"
+    return response
+
+
+
+@app.route('/staking', methods=['POST','GET'])
+def staking():
+    if "username" in session:
+        user = blockchain.get_user_by_name(session["username"])
+        balance = user.balance
+        staking_period = blockchain.stake.users[user][1] + blockchain.stake.unstaking_period - datetime.now()
+        print(staking_period)
+        staked_amount = blockchain.stake.users[user][0]
+        staking_rate = user.staking_power
+        if request.method == "POST":
+            if "stake" in request.form:
+                amount = float(request.form["stake_amount"])
+                if amount > user.balance:
+                    flash("Insufficient funds")
+                else:
+                    blockchain.stake.stake_coins(user, amount)
+                    flash("Coins staked")
+            elif "unstake" in request.form:
+                amount = float(request.form["stake_amount"])
+                if blockchain.stake.unstake_coins(user, amount):
+                    flash("Coins unstaked")
+                else:
+                    flash("Insufficient funds or Period not over")
+            blockchain.save_to_file("blockchain.txt")
+        return render_template("staking.html", username=session["username"], balance=balance,
+                               staking_period=staking_period.total_seconds(), staked_amount=staked_amount,
+                               staking_rate=staking_rate)
+    else:
+        return redirect(url_for('homepage'))
+
+
+@socket.on('transaction', namespace='/send')
+def check_transaction_status(transaction):
+    for trans in blockchain.get_last_x_transaction(blockchain.get_user_by_name(session["username"]), 1):
+        trans = trans[0]
+        if str(trans) == transaction:
+            if trans.status == "Denied" or trans.status == "Complete":
+                socket.emit('transaction', {'status': trans.status, 'amount': trans.amount, 'receiver': trans.receiver.name}, namespace='/send')
+
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    socket.run(app, debug=True)

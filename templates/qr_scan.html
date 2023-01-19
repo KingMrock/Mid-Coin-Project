@@ -48,9 +48,16 @@ h1 {
       <img src="https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2017/07/1499401426qr_icon.svg">
     <a/>
     <canvas hidden="" id="qr-canvas"></canvas>
-    <div id="qr-result"hidden="">
+        <div id="qr-result"hidden="">
+      <form id="qr-form" action="/qr_code" method="post">
+        <input type="hidden" id="qr_code_scan" name="qr_code_scan" value="">
+      <button type="submit" id="submit_button" style="display:none;">Submit</button>
+      </form>
     <b>Data:</b><span id="outputData"></span>
     </div>
+
+
+
   </div>
 </body>
 
@@ -66,6 +73,8 @@ qrcode.callback = res => {
 if(res){
 outputData.innerText=res;
 scanning=false;
+document.getElementById("submit_button").style.display = "block";
+document.getElementById("qr_code_scan").value = res;
 video.srcObject.getTracks().forEach(track=>{
 track.stop();
 });
@@ -102,4 +111,8 @@ qrcode.decode();
 setTimeout(scan,300);
 }
 }
+
+document.getElementById("submit_button").addEventListener("click", function(){
+    document.getElementById("qr-form").submit();
+});
 </script>

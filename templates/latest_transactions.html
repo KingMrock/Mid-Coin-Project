@@ -31,6 +31,23 @@
             cursor: pointer;
         }
 
+        .transactions-container {
+  height: 300px;
+  overflow-y: scroll;
+}
+
+.transaction {
+  padding: 10px;
+}
+
+
+.sent {
+    background-color: red;
+}
+
+.received {
+    background-color: green;
+}
 
 
 
@@ -39,6 +56,9 @@
   <body>
     <nav class="navbar navbar-dark bg-dark">
       <a class="navbar-brand" href="#">Mid£Coin</a>
+      <form class="form-inline" method="get" action="/dashboard">
+        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Dashboard</button>
+      </form>
       <form class="form-inline" method="post" action="/logout">
         <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Logout</button>
       </form>
@@ -46,18 +66,20 @@
     <div class="d-flex flex-column main-view">
       <h1>Welcome, {{username}}</h1>
       <p>Balance: {{balance}}</p>
-      <img src="/qr_code_generate" alt="QR Code">
-      <p>Public Key: {{pubkey}}</p>
-      <a href="/latest_transactions" class="btn btn-primary"> Recent Transactions</a>
-      <button class="btn btn-primary" onclick="downloadBlockchain()">Download Blockchain</button>
-<script>
-    function downloadBlockchain() {
-        window.location.href = '/download-blockchain';
-    }
-</script>
-
-      <a href="/send" class="btn btn-primary">Make Transaction</a>
-      <a href="/staking" class="btn btn-primary">Staking</a>
+      <form method="POST" action="{{ url_for('latest_transactions') }}">
+        <label>Enter the number of transactions you want to see:</label>
+        <input type="text" name="num_transaction">
+        <input type="submit" value="Submit">
+      </form>
+        <div class="transaction-container">
+        {% for transaction in transactions %}
+            {% if transaction['sender'] == session['username'] %}
+                <div class="transaction sent">You've sent {{transaction['amount']}} Mid£Coin to {{transaction['receiver']}}</div>
+            {% elif transaction['receiver'] == session['username'] %}
+                <div class="transaction received">{{transaction['sender']}} sent you {{transaction['amount']}} Mid£Coin</div>
+            {% endif %}
+        {% endfor %}
+        </div>
     </div>
   </body>
 

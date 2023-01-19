@@ -7,7 +7,7 @@ from Point import CurvePoint
 from Field import Zn
 from Signature import *
 from random import randint
-from User import *
+from Blockchain_Tools import *
 from Block import *
 
 # Defining main function
@@ -40,11 +40,15 @@ def main():
     blockchain.print_chain()
 
     blockchain.save_to_file("blockchain.txt")
-
-
+    print("Saved blockchain to blockchain.txt")
+    blockchain.stop_timer()
+    print("Here")
 
     blockload = BlockChain.load_from_file("blockchain.txt")
     blockload.print_chain()
+    blockload.stop_timer()
+
+    return 0
 # Using the special variable
 # __name__
 if __name__ == "__main__":

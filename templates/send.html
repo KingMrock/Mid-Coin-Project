@@ -1,13 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html xmlns="">
 <head>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <title>MidlCoin - Signup</title>
-    <script src="/static/signup_script.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.2/socket.io.min.js"></script>
+
 
      <meta charset="UTF-8">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
     <style>
-        body {
+         .main-view {
             background: linear-gradient(to bottom, #1c1c1c, #2b2b2b);
             background-size: cover;
             height: 100vh;
@@ -15,13 +21,13 @@
             align-items: center;
             justify-content: center;
             color: white;
-        }
+      }
         h1 {
             text-align: center;
             font-weight: bold;
             text-shadow: 2px 2px 4px #000000;
         }
-        .btn-custom {
+        .btn {
             background-color: #0096c9;
             color: white;
             font-weight: bold;
@@ -30,32 +36,83 @@
             transition: background-color 0.3s ease;
             margin-top: 20px;
         }
-        .btn-custom:hover {
+        .btn:hover {
             background-color: #007e9e;
             color: white;
             cursor: pointer;
         }
+
+        #toast-container > div {
+    opacity:1;
+    background-color: #5f5f5f;
+    textcolor": #00ff00
+}
+}
+
     </style>
+
+
+    <script>
+        var socket = io.connect('http://' + document.domain + ':' + location.port + '/send');
+        socket.on("connect", function() {
+            console.log("Connected");
+        });
+
+        setInterval(function() {
+            var transac = document.getElementById("transaction_data").value;
+            socket.emit('transaction', transac)    ;
+            socket.on('transaction', function(data) {
+                console.log(data);
+                if (data['status'] == "Complete") {
+                    document.getElementById("transaction_data").value = "";
+
+                    console.log("Transaction Complete");
+                    toastr.success("Transaction of " + data.amount + " to " + data.receiver + " is complete", {
+  "closeButton": true,
+  "debug": false,
+  "newestOnTop": true,
+  "progressBar": true,
+  "positionClass": "toast-top-right",
+  "preventDuplicates": true,
+  "onclick": null,
+  "showDuration": "300",
+  "hideDuration": "1000",
+  "timeOut": "5000",
+  "extendedTimeOut": "1000",
+  "showMethod": "fadeIn",
+  "hideMethod": "fadeOut",
+});
+
+                 } else {
+                    showTransactionDeniedToast(data);
+                }
+            });
+        }, 3000);
+    </script>
+
 </head>
+
 <body>
  <nav class="navbar navbar-dark bg-dark">
       <a class="navbar-brand" href="#">Mid£Coin</a>
-      <form class="form-inline" method="post" action="/logout">
-        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Logout</button>
-      </form>
      <form class="form-inline" method="get" action="/dashboard">
         <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Dashboard</button>
       </form>
-    </nav>
+     <form class="form-inline" method="post" action="/logout">
+        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Logout</button>
+      </form>
+ </nav>
+
     <div class="d-flex flex-column main-view">
-      <h1>Transaction</h1>
-      <p>Balance: {{balance}}
-      </p>
+      <h1>Transaction Page</h1>
+      <h2> {{username}} </h2>
+        <h3> Your Balance : {{balance}} Mid£Coin</h3>
         <form action="#" method="post">
             <div class="d-flex flex-column form-group">
                 <label for="amount">Amount</label>
                 <input type="text" class="form-control" name="amount">
-                <h1>Send to</h1>
+                <hr>
+                <h6>Send to</h6>
                 <label for="x">X value</label>
                 <input type="text" class = form-control" name="x" value="{{ session.get('x') }}">
                 <label for="y">Y value</label>
@@ -66,13 +123,16 @@
                     {% for message in messages %}
                     {{ message }}
                     {% endfor %}
-                </div>
-            {% endif %}
-            {% endwith %}
+                  </div>
+                {% endif %}
+                {% endwith %}
             <button type="submit" class="btn btn-primary">Make Transaction</button>
+            </div>
         </form>
       <a href="/qr_scan" class="btn btn-primary">Scan QR Code</a>
     </div>
+<input type="hidden" id="transaction_data" value="{{transaction_data}}">
 
 </body>
 </html>
+

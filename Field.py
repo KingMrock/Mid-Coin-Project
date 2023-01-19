@@ -62,6 +62,9 @@ class Zn(_FieldElement):
     def get_n(self):
         return self.__n
 
+    def get_p(self):
+        return self.p
+
     @typecheck
     def __add__(self, other):
         return Zn(self.get_n() + other.get_n(), self.p)
