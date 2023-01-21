@@ -7,7 +7,7 @@ from PIL import Image
 from Field import Zn
 import os
 
-app = Flask(__name__, template_folder='templates', static_folder='static')
+app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
 
