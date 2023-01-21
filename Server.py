@@ -309,8 +309,3 @@ def receive():
                 resp = {'status': trans.status, 'amount': trans.amount, 'sender': trans.sender.name}
                 return make_response(resp)
     return make_response({'status': "Pending"})
-
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
