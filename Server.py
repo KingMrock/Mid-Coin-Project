@@ -1,21 +1,30 @@
 import time
-
-from flask import Flask, request, render_template, make_response, jsonify, redirect, session, url_for, flash, \
+from flask import Flask, request, render_template, make_response, redirect, session, url_for, flash, \
     send_from_directory, send_file
 from Block import *
 import qrcode
 from PIL import Image
 from Field import Zn
-import asyncio
-from flask_socketio import SocketIO, emit
+import os
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
-socket = SocketIO(app)
 
 
-blockchain = BlockChain.load_from_file("blockchain.txt")
-blockchain.print_users()
+# If the file exists import the Blockchain, otherwise create a new one
+
+
+if os.path.exists("blockchain.txt"):
+    blockchain = BlockChain.load_from_file("blockchain.txt")
+else:
+    p = 20333
+    a = Zn(0, p)
+    b = Zn(7, p)
+    # Create the curve object
+    curve = EllipticCurve(a, b)
+    curve.set_generator(CurvePoint(Zn(15377, p), Zn(20134, p), curve))
+    curve.set_order(3389)
+    blockchain = BlockChain(curve)
 
 
 def generate_qr_code(public_key):
@@ -40,6 +49,7 @@ def signup():
     if request.method == "POST":
         # Retrieve the user's input
         username = request.form['username']
+        session['latest_transaction'] = None
 
 
         while True:
@@ -57,6 +67,7 @@ def signup():
         session["pubkey"] = str(user.pubkey)
         session["username"] = username
         session["privkey"] = private_key
+        session["latest_received_transaction"] = str(blockchain.get_last_x_transaction_receiver(blockchain.get_user_by_name(username), 1)[0])
 
         return redirect(url_for('privatekey'))
     else:
@@ -89,15 +100,19 @@ def login():
             public_key = blockchain.curve.get_generator() * private_key
         except:
             flash("Invalid private key")
+            return redirect(url_for('login'))
         current_user = blockchain.get_user_by_name(username)
         if current_user is not None:
             if current_user.pubkey == public_key:
                 session["username"] = username
                 session["pubkey"] = str(public_key)
                 session["privkey"] = private_key
+                session["latest_transaction"] = None
+                session["latest_received_transaction"] = str(blockchain.get_last_x_transaction_receiver(current_user, 1)[0])
                 return redirect(url_for('dashboard'))
             else:
                 flash("Wrong private key")
+                return redirect(url_for('login'))
         else:
             flash("Invalid username")
             return redirect(url_for('login'))
@@ -111,6 +126,10 @@ def logout():
     session.pop("privkey", None)
     session.pop("pubkey", None)
     session.pop("balance", None)
+    session.pop("latest_transaction", None)
+    session.pop("latest_received_transaction", None)
+    session["x"] = ""
+    session["y"] = ""
     flash("You have been logged out", "info")
     return redirect(url_for('homepage'))
 
@@ -138,12 +157,8 @@ def dashboard():
 
 
 @app.route('/send', methods=['POST','GET'])
-def send(transaction_data=None):
+def send():
     if "username" in session:
-        if "latest_transaction" in session:
-            latest_transaction = session["latest_transaction"]
-        else:
-            latest_transaction = None
         if request.method == "POST":
             username = session["username"]
             amount = request.form['amount']
@@ -151,13 +166,15 @@ def send(transaction_data=None):
             y = int(request.form['y'])
             p = blockchain.curve.get_a().p
             try:
-                amount = int(amount)
+                amount = float(amount)
             except:
                 flash("Invalid amount")
                 return redirect(url_for('send'))
             try:
                 recipient = CurvePoint(Zn(x, p), Zn(y, p), blockchain.curve)
             except:
+                session["x"] = ""
+                session["y"] = ""
                 flash("Invalid Recipient")
                 return redirect(url_for('send'))
             if blockchain.get_user_by_name(username).balance < amount:
@@ -167,16 +184,17 @@ def send(transaction_data=None):
             else:
                 transaction = blockchain.make_transaction(blockchain.get_user_by_name(username).pubkey,
                                         session["privkey"], recipient, amount)
-                print(str(transaction))
                 flash("Transaction sent")
                 session["latest_transaction"] = str(transaction)
-                return redirect(url_for('send',))
+                session["x"] = ""
+                session["y"] = ""
+                return redirect(url_for('send'))
 
             return redirect(url_for('send'))
         else:
             return render_template("send.html",
                                    balance=blockchain.get_user_by_name(session["username"]).balance,
-                                   username=session["username"], transaction_data=latest_transaction)
+                                   username=session["username"])
     else:
         return redirect(url_for('homepage'))
 
@@ -222,8 +240,7 @@ def latest_transactions():
                     transaction = transaction[0]
                     transactions.append({'sender': transaction.sender.name, 'amount': transaction.amount, 'receiver': transaction.receiver.name})
                 return render_template("latest_transactions.html", balance=blockchain.get_user_by_name(session["username"]).balance,
-                                       username=session["username"],
-                                       transactions=transactions)
+                                       username=session["username"], transactions=transactions)
         else:
             return render_template("latest_transactions.html", balance=blockchain.get_user_by_name(session["username"]).balance,
                                        username=session["username"])
@@ -246,7 +263,6 @@ def staking():
         user = blockchain.get_user_by_name(session["username"])
         balance = user.balance
         staking_period = blockchain.stake.users[user][1] + blockchain.stake.unstaking_period - datetime.now()
-        print(staking_period)
         staked_amount = blockchain.stake.users[user][0]
         staking_rate = user.staking_power
         if request.method == "POST":
@@ -271,15 +287,30 @@ def staking():
         return redirect(url_for('homepage'))
 
 
-@socket.on('transaction', namespace='/send')
-def check_transaction_status(transaction):
-    for trans in blockchain.get_last_x_transaction(blockchain.get_user_by_name(session["username"]), 1):
+@app.route('/notification', methods=['GET'])
+def check_transaction_status():
+    for trans in blockchain.get_last_x_transaction_sender(blockchain.get_user_by_name(session["username"]), 1):
         trans = trans[0]
-        if str(trans) == transaction:
+        if str(trans) == session["latest_transaction"]:
             if trans.status == "Denied" or trans.status == "Complete":
-                socket.emit('transaction', {'status': trans.status, 'amount': trans.amount, 'receiver': trans.receiver.name}, namespace='/send')
+                session["latest_transaction"] = None
+                resp = {'status': trans.status, 'amount': trans.amount, 'receiver': trans.receiver.name}
+                return make_response(resp)
+    return make_response({'status': "Pending"})
+
+
+@app.route('/receive', methods=['GET'])
+def receive():
+    for trans in blockchain.get_last_x_transaction_receiver(blockchain.get_user_by_name(session["username"]), 1):
+        trans = trans[0]
+        if str(trans) != session["latest_received_transaction"]:
+            if trans.status == "Denied" or trans.status == "Complete":
+                session["latest_received_transaction"] = str(trans)
+                resp = {'status': trans.status, 'amount': trans.amount, 'sender': trans.sender.name}
+                return make_response(resp)
+    return make_response({'status': "Pending"})
 
 
 
 if __name__ == '__main__':
-    socket.run(app, debug=True)
+    app.run(debug=True)

@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html>
   <head>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
+    <script src="./static/notification.js"></script>
+
+
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
     <style>
 
@@ -51,6 +58,14 @@
 
 
 
+    #toast-container > div {
+        opacity:1;
+        close-button: true;
+    }
+    #toast-container > .toast-success {
+        background-color: green;
+    }
+
     </style>
   </head>
   <body>
@@ -74,9 +89,9 @@
         <div class="transaction-container">
         {% for transaction in transactions %}
             {% if transaction['sender'] == session['username'] %}
-                <div class="transaction sent">You've sent {{transaction['amount']}} Mid£Coin to {{transaction['receiver']}}</div>
+                <div class="transaction sent">You've sent {{transaction['amount']}} ᙢ to {{transaction['receiver']}}</div>
             {% elif transaction['receiver'] == session['username'] %}
-                <div class="transaction received">{{transaction['sender']}} sent you {{transaction['amount']}} Mid£Coin</div>
+                <div class="transaction received">{{transaction['sender']}} sent you {{transaction['amount']}} ᙢ</div>
             {% endif %}
         {% endfor %}
         </div>

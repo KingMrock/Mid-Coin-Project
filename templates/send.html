@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html xmlns="">
 <head>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <title>MidlCoin - Signup</title>
-
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.2/socket.io.min.js"></script>
+    <script src="./static/notification.js"></script>
 
 
      <meta charset="UTF-8">
@@ -40,55 +38,17 @@
             background-color: #007e9e;
             color: white;
             cursor: pointer;
-        }
+         }
 
-        #toast-container > div {
-    opacity:1;
-    background-color: #5f5f5f;
-    textcolor": #00ff00
-}
-}
+    #toast-container > div {
+        opacity:1;
+        close-button: true;
+    }
+    #toast-container > .toast-success {
+        background-color: green;
+    }
 
     </style>
-
-
-    <script>
-        var socket = io.connect('http://' + document.domain + ':' + location.port + '/send');
-        socket.on("connect", function() {
-            console.log("Connected");
-        });
-
-        setInterval(function() {
-            var transac = document.getElementById("transaction_data").value;
-            socket.emit('transaction', transac)    ;
-            socket.on('transaction', function(data) {
-                console.log(data);
-                if (data['status'] == "Complete") {
-                    document.getElementById("transaction_data").value = "";
-
-                    console.log("Transaction Complete");
-                    toastr.success("Transaction of " + data.amount + " to " + data.receiver + " is complete", {
-  "closeButton": true,
-  "debug": false,
-  "newestOnTop": true,
-  "progressBar": true,
-  "positionClass": "toast-top-right",
-  "preventDuplicates": true,
-  "onclick": null,
-  "showDuration": "300",
-  "hideDuration": "1000",
-  "timeOut": "5000",
-  "extendedTimeOut": "1000",
-  "showMethod": "fadeIn",
-  "hideMethod": "fadeOut",
-});
-
-                 } else {
-                    showTransactionDeniedToast(data);
-                }
-            });
-        }, 3000);
-    </script>
 
 </head>
 
@@ -106,7 +66,7 @@
     <div class="d-flex flex-column main-view">
       <h1>Transaction Page</h1>
       <h2> {{username}} </h2>
-        <h3> Your Balance : {{balance}} Mid£Coin</h3>
+        <h3> Your Balance : {{balance}} ᙢ</h3>
         <form action="#" method="post">
             <div class="d-flex flex-column form-group">
                 <label for="amount">Amount</label>
@@ -131,7 +91,6 @@
         </form>
       <a href="/qr_scan" class="btn btn-primary">Scan QR Code</a>
     </div>
-<input type="hidden" id="transaction_data" value="{{transaction_data}}">
 
 </body>
 </html>

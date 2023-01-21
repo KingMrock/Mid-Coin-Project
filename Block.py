@@ -108,6 +108,9 @@ class BlockChain (object):
                 self.pending_transactions.remove(transaction)
                 transaction[0].status = "Denied"
             else:
+                print(str(transaction))
+                # Round the amount to 5 decimals
+                transaction[0].amount = round(transaction[0].amount, 5)
                 transaction[0].sender.balance -= transaction[0].amount
                 transaction[0].receiver.balance += transaction[0].amount
                 transaction[0].status = "Complete"
@@ -215,6 +218,32 @@ class BlockChain (object):
         for block in reversed(self.blocks):
             for transaction in reversed(block.transactions):
                 if transaction[0].sender == user or transaction[0].receiver == user:
+                    transactions.append(transaction)
+                    if len(transactions) == number:
+                        return transactions
+        return transactions
+
+    def get_last_x_transaction_sender(self, user, number):
+        """
+        Get the last x transactions of a user
+        """
+        transactions = []
+        for block in reversed(self.blocks):
+            for transaction in reversed(block.transactions):
+                if transaction[0].sender == user:
+                    transactions.append(transaction)
+                    if len(transactions) == number:
+                        return transactions
+        return transactions
+
+    def get_last_x_transaction_receiver(self, user, number):
+        """
+        Get the last x transactions received by a user
+        """
+        transactions = []
+        for block in reversed(self.blocks):
+            for transaction in reversed(block.transactions):
+                if transaction[0].receiver == user:
                     transactions.append(transaction)
                     if len(transactions) == number:
                         return transactions
