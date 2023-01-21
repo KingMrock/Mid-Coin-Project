@@ -41,7 +41,7 @@ def generate_qr_code(public_key):
 
 @app.route('/')
 def homepage():
-    return render_template('homepage.html')
+    return render_template('index.html')
 
 
 @app.route('/signup', methods=['POST','GET'])
