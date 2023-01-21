@@ -108,7 +108,6 @@ class BlockChain (object):
                 self.pending_transactions.remove(transaction)
                 transaction[0].status = "Denied"
             else:
-                print(str(transaction))
                 # Round the amount to 5 decimals
                 transaction[0].amount = round(transaction[0].amount, 5)
                 transaction[0].sender.balance -= transaction[0].amount

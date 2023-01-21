@@ -43,7 +43,6 @@ class Transaction:
 
     @classmethod
     def is_valid(cls, transaction):
-        print(transaction.sender.balance, transaction.amount)
         return transaction.sender.balance >= transaction.amount
 
     def __getstate__(self):
