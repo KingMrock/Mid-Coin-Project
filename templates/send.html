@@ -77,6 +77,8 @@
                 <input type="text" class = form-control" name="x" value="{{ session.get('x') }}">
                 <label for="y">Y value</label>
                 <input type="text" class = form-control" name="y" value= "{{ session.get('y') }}">
+                <input type="checkbox" name="fast_transaction" value="true">
+                <label for="fast_transaction">Do you want to enable direct transaction (it will cost you 5% of the transaction amount</label>
                 {% with messages = get_flashed_messages() %}
                 {% if messages %}
                 <div class="alert alert-danger" role="alert">

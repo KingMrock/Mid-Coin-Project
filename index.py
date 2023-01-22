@@ -1,9 +1,6 @@
-import time
-from flask import Flask, request, render_template, make_response, redirect, session, url_for, flash, \
-    send_from_directory, send_file
+from flask import Flask, request, render_template, make_response, redirect, session, url_for, flash, send_file
 from Block import *
 import qrcode
-from PIL import Image
 from Field import Zn
 import os
 
@@ -36,7 +33,7 @@ def generate_qr_code(public_key):
     qr.add_data(public_key)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
-    img.save("public_key_qr.jpg")
+    return img
 
 
 @app.route('/')
@@ -50,15 +47,12 @@ def signup():
         # Retrieve the user's input
         username = request.form['username']
         session['latest_transaction'] = None
-
-
         while True:
-        # Generate a private key for the user
-            private_key = random.randint(1, blockchain.curve.get_order() - 1)
+            # Generate a private key for the user, 1 and 2 are reserved for Blockchain rewards
+            private_key = random.randint(3, blockchain.curve.get_order() - 1)
             pubkey = blockchain.curve.get_generator() * private_key
             if blockchain.get_user(pubkey) is None:
                 break
-
 
         # Create the user
         user = User(username, pubkey)
@@ -77,8 +71,8 @@ def signup():
 @app.route('/qr_code_generate', methods = ['GET'])
 def qr_code_generate():
     pubkey = session["pubkey"]
-    generate_qr_code(pubkey)
-    return send_file("public_key_qr.jpg", mimetype='image/jpg')
+    return send_file(generate_qr_code(pubkey), mimetype='image/jpg')
+
 
 @app.route('/privatekey')
 def privatekey():
@@ -99,6 +93,9 @@ def login():
             private_key = int(temp)
             public_key = blockchain.curve.get_generator() * private_key
         except:
+            flash("Invalid private key")
+            return redirect(url_for('login'))
+        if private_key == 1 or private_key == 2:
             flash("Invalid private key")
             return redirect(url_for('login'))
         current_user = blockchain.get_user_by_name(username)
@@ -184,6 +181,10 @@ def send():
             else:
                 transaction = blockchain.make_transaction(blockchain.get_user_by_name(username).pubkey,
                                         session["privkey"], recipient, amount)
+                fast = request.form.get('fast_transaction')
+                if fast == "true":
+                    blockchain.make_transaction(blockchain.get_user_by_name(username).pubkey, session["privkey"], blockchain.get_user_by_name("bonus").pubkey, 0.05*amount)
+                    blockchain.mine()
                 flash("Transaction sent")
                 session["latest_transaction"] = str(transaction)
                 session["x"] = ""

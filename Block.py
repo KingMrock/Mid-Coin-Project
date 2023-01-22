@@ -16,7 +16,7 @@ class Block (object):
         self.data = str(previous_hash) + str(transactions)
         self.hash = str(Hash(self.data))
         self.miner = None
-        self.stop_event = threading.Event()
+        self.reward = 0
 
     def calculate_hash(self):
         return str(Hash(self.data))
@@ -28,19 +28,20 @@ class Block (object):
         return "Block Hash:" + str(self.hash) + \
                "\nPrevious Hash: " + str(self.previous_hash) + \
                "\nTransaction in this block:\n" + transactions + \
-               "Mined by: " + str(self.miner)
+               "Mined by: " + str(self.miner) + "Reward: " + str(self.reward)
 
     def __eq__(self, other):
         return self.hash == other.hash
 
     def __getstate__(self):
-        return {'previous_hash': self.previous_hash, 'transactions': self.transactions, 'data': self.data, 'hash': self.hash, 'miner': self.miner }
+        return {'previous_hash': self.previous_hash, 'transactions': self.transactions, 'data': self.data, 'hash': self.hash, 'miner': self.miner, 'reward': self.reward}
 
     def __setstate__(self, state):
         self.__init__(state['previous_hash'], state['transactions'])
         self.data = state['data']
         self.hash = state['hash']
         self.miner = state['miner']
+        self.reward = state['reward']
 
 class BlockChain (object):
     def __init__(self, curve: EllipticCurve):
@@ -51,10 +52,16 @@ class BlockChain (object):
         self.stake = Staking()
         god = User("God", curve.get_generator() * 1)
         god.balance = 500
+        bonus = User("Bonus", curve.get_generator() * 2)
+        bonus.balance = 0
         self.users.append(god)
-        self.stop_event = threading.Event()
-        self.thread = threading.Thread(target=self.start_timer)
-        self.thread.start()
+        self.users.append(bonus)
+        """
+        Can't use thread on server deployment
+            self.stop_event = threading.Event()
+            self.thread = threading.Thread(target=self.start_timer)
+            self.thread.start()
+        """
 
     def add_user(self, user: User):
         self.users.append(user)
@@ -116,9 +123,11 @@ class BlockChain (object):
 
         new_block = Block(previous_hash, self.pending_transactions)
         new_block.miner = miner
+        new_block.reward = 2 + self.get_user_by_name("Bonus").balance
 
         if miner is not self.get_user_by_name("God"):
-            miner.balance += 10
+            miner.balance += (2 + self.get_user_by_name("Bonus").balance)
+            self.get_user_by_name("Bonus").balance = 0
         self.blocks.append(new_block)
         self.pending_transactions = []
         #Save the blockchain
@@ -297,8 +306,10 @@ class BlockChain (object):
         Used to pickle the blockchain
         """
         state = self.__dict__.copy()
+        """
         del state['thread']
         del state['stop_event']
+        """
         return state
 
     def __setstate__(self, state):
@@ -306,9 +317,11 @@ class BlockChain (object):
         Used to unpickle the blockchain
         """
         self.__dict__.update(state)
+        """
         self.thread = threading.Thread(target=self.start_timer)
         self.stop_event = threading.Event()
         self.stop_event.set()
         self.thread.start()
+        """
 
 
