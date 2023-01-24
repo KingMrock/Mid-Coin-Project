@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Logout</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <style>
+         .main-view {
+            background: linear-gradient(to bottom, #1c1c1c, #2b2b2b);
+            background-size: cover;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+      }
+    </style>
+  <script>
+    function logout() {
+      setTimeout(function(){
+        window.location.href = "/";
+      }, 3000);
+    }
+  </script>
+</head>
+<body onload="logout()">
+    <div class="main-view">
+        <h1>You've been logged out</h1>
+    </div>
+</body>
+</html>

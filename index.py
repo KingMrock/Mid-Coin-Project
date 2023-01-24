@@ -1,11 +1,12 @@
 from flask import Flask, request, render_template, make_response, redirect, session, url_for, flash, send_file
 from Block import *
-import qrcode
+from flask_qrcode import QRcode
 from Field import Zn
 import os
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+QRcode(app)
 
 
 # If the file exists import the Blockchain, otherwise create a new one
@@ -23,19 +24,6 @@ else:
     curve.set_order(3389)
     blockchain = BlockChain(curve)
 
-
-def generate_qr_code(public_key):
-    qr = qrcode.QRCode(
-        version=1,
-        box_size=10,
-        border=5
-    )
-    qr.add_data(public_key)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    return img
-
-
 @app.route('/')
 def homepage():
     return render_template('index.html')
@@ -46,6 +34,12 @@ def signup():
     if request.method == "POST":
         # Retrieve the user's input
         username = request.form['username']
+        if username == "" or len(username) > 20:
+            flash("Username can't be empty or longer than 20 characters")
+            return redirect(url_for('signup'))
+        if blockchain.get_user_by_name(username) is not None:
+            flash("Username already exists")
+            return redirect(url_for('signup'))
         session['latest_transaction'] = None
         while True:
             # Generate a private key for the user, 1 and 2 are reserved for Blockchain rewards
@@ -61,17 +55,11 @@ def signup():
         session["pubkey"] = str(user.pubkey)
         session["username"] = username
         session["privkey"] = private_key
-        session["latest_received_transaction"] = str(blockchain.get_last_x_transaction_receiver(blockchain.get_user_by_name(username), 1)[0])
+        session["latest_received_transaction"] = None
 
         return redirect(url_for('privatekey'))
     else:
         return render_template("signup.html")
-
-
-@app.route('/qr_code_generate', methods = ['GET'])
-def qr_code_generate():
-    pubkey = session["pubkey"]
-    return send_file(generate_qr_code(pubkey), mimetype='image/jpg')
 
 
 @app.route('/privatekey')
@@ -98,6 +86,9 @@ def login():
         if private_key == 1 or private_key == 2:
             flash("Invalid private key")
             return redirect(url_for('login'))
+        if username == "God" or username == "bonus":
+            flash("What are you trying to achieve you filthy cheater?")
+            return redirect(url_for("login"))
         current_user = blockchain.get_user_by_name(username)
         if current_user is not None:
             if current_user.pubkey == public_key:
@@ -105,7 +96,6 @@ def login():
                 session["pubkey"] = str(public_key)
                 session["privkey"] = private_key
                 session["latest_transaction"] = None
-                session["latest_received_transaction"] = str(blockchain.get_last_x_transaction_receiver(current_user, 1)[0])
                 return redirect(url_for('dashboard'))
             else:
                 flash("Wrong private key")
@@ -124,11 +114,10 @@ def logout():
     session.pop("pubkey", None)
     session.pop("balance", None)
     session.pop("latest_transaction", None)
-    session.pop("latest_received_transaction", None)
     session["x"] = ""
     session["y"] = ""
-    flash("You have been logged out", "info")
-    return redirect(url_for('homepage'))
+    session.pop('_flashes', None)
+    return render_template("logout.html")
 
 @app.route('/dashboard', methods=['POST','GET'])
 def dashboard():
@@ -146,7 +135,6 @@ def dashboard():
             elif "logout" in request.form:
                 return redirect(url_for('logout'))
         else:
-            generate_qr_code(session["pubkey"])
             return render_template("dashboard.html", username=username, pubkey=session["pubkey"],
                                    balance=session["balance"], staking_power=session["staking_power"])
     else:
@@ -176,8 +164,12 @@ def send():
                 return redirect(url_for('send'))
             if blockchain.get_user_by_name(username).balance < amount:
                 flash("Insufficient funds")
+            elif amount <= 0:
+                flash("Invalid amount")
             elif blockchain.get_user(recipient) is None:
                 flash("Invalid recipient")
+            elif blockchain.get_user(recipient).name == username:
+                flash("Can't send to yourself")
             else:
                 transaction = blockchain.make_transaction(blockchain.get_user_by_name(username).pubkey,
                                         session["privkey"], recipient, amount)
@@ -223,6 +215,7 @@ def read_string_coordinates(string):
 @app.route('/latest_transactions', methods=['POST','GET'])
 def latest_transactions():
     if "username" in session:
+
         if request.method == "POST":
             if "dashboard" in request.form:
                 return redirect(url_for('dashboard'))
@@ -262,35 +255,38 @@ def download_blockchain():
 def staking():
     if "username" in session:
         user = blockchain.get_user_by_name(session["username"])
-        balance = user.balance
         staking_period = blockchain.stake.users[user][1] + blockchain.stake.unstaking_period - datetime.now()
-        staked_amount = blockchain.stake.users[user][0]
-        staking_rate = user.staking_power
         if request.method == "POST":
             if "stake" in request.form:
                 amount = float(request.form["stake_amount"])
                 if amount > user.balance:
                     flash("Insufficient funds")
+                elif amount <= 0:
+                    flash("Invalid amount")
                 else:
                     blockchain.stake.stake_coins(user, amount)
                     flash("Coins staked")
             elif "unstake" in request.form:
                 amount = float(request.form["stake_amount"])
-                if blockchain.stake.unstake_coins(user, amount):
+                if amount > blockchain.stake.users[user][0]:
+                    flash("Insufficient funds")
+                elif amount <= 0:
+                    flash("Invalid amount")
+                elif blockchain.stake.unstake_coins(user, amount):
                     flash("Coins unstaked")
                 else:
-                    flash("Insufficient funds or Period not over")
+                    flash("Unstaking Period not over")
             blockchain.save_to_file("blockchain.txt")
-        return render_template("staking.html", username=session["username"], balance=balance,
-                               staking_period=staking_period.total_seconds(), staked_amount=staked_amount,
-                               staking_rate=staking_rate)
+        return render_template("staking.html", username=session["username"], balance=blockchain.get_user_by_name(session["username"]).balance,
+                               staking_period=staking_period.total_seconds(), staked_amount=blockchain.stake.users[user][0],
+                               staking_rate=user.staking_power)
     else:
         return redirect(url_for('homepage'))
 
 
 @app.route('/notification', methods=['GET'])
 def check_transaction_status():
-    for trans in blockchain.get_last_x_transaction_sender(blockchain.get_user_by_name(session["username"]), 1):
+    for trans in blockchain.get_last_x_transaction_sender(blockchain.get_user_by_name(session["username"]), 2):
         trans = trans[0]
         if str(trans) == session["latest_transaction"]:
             if trans.status == "Denied" or trans.status == "Complete":
@@ -310,3 +306,21 @@ def receive():
                 resp = {'status': trans.status, 'amount': trans.amount, 'sender': trans.sender.name}
                 return make_response(resp)
     return make_response({'status': "Pending"})
+
+
+@app.route('/information', methods=['POST','GET'])
+def information():
+    if request.method == "POST":
+        if "dashboard" in request.form:
+            return redirect(url_for('dashboard'))
+        elif "logout" in request.form:
+            return redirect(url_for('logout'))
+        elif "homepage" in request.form:
+            return redirect(url_for('homepage'))
+    if "username" in session:
+        return render_template("information.html", username=session["username"])
+    else:
+        return render_template("information.html", username="God")
+
+if __name__ == '__main__':
+    app.run(debug=True)

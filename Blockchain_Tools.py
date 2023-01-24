@@ -72,7 +72,10 @@ class Staking:
 
     def update_staking_power(self, user: User):
         """Update the user's staking power based on the amount of staked coins."""
-        user.staking_power = self.users[user][0] / self.total_staked_coins
+        if self.total_staked_coins == 0:
+            user.staking_power = 0
+        else:
+            user.staking_power = self.users[user][0] / self.total_staked_coins
 
     def unstake_coins(self, user: User, amount: float):
         """Unstake a given amount of coins."""

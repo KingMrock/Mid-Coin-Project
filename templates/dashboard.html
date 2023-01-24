@@ -46,6 +46,10 @@
         background-color: green;
     }
 
+    #toast-container > .toast-info {
+        background-color: blue;
+    }
+
 
 
     </style>
@@ -60,8 +64,9 @@
     <div class="d-flex flex-column main-view">
       <h1>Welcome, {{username}}</h1>
       <p>Balance: {{balance}} ᙢ</p>
-      <img src="/qr_code_generate" alt="QR Code">
-      <p>Public Key: {{pubkey}}</p>
+      <img src="{{ qrcode(pubkey, box_size=10, error_correction='H', back_color='#1c1c1c', fill_color='#0096c9') }}" alt="QR Code">
+      <div style="height: 10px;"></div>
+      <h4>Public Key: {{pubkey}}</h4>
       <a href="/latest_transactions" class="btn btn-primary"> Recent Transactions</a>
       <button class="btn btn-primary" onclick="downloadBlockchain()">Download Blockchain</button>
 <script>
@@ -72,6 +77,7 @@
 
       <a href="/send" class="btn btn-primary">Make Transaction</a>
       <a href="/staking" class="btn btn-primary">Staking</a>
+      <a href="/information" class="btn btn-custom"> Information</a>
     </div>
   </body>
 

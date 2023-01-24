@@ -51,6 +51,15 @@
                         <input type="text" class="form-control" name="username">
                     </div>
                     <button type="submit" class="btn btn-primary">Signup</button>
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                        <div class="alert alert-danger" role="alert">
+                            {% for message in messages %}
+                            {{ message }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% endwith %}
                 </form>
             </div>
         </div>

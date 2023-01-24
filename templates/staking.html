@@ -47,6 +47,9 @@
         background-color: green;
     }
 
+    #toast-container > .toast-info {
+        background-color: blue;
+    }
 
 
 
@@ -68,16 +71,17 @@
       <p>Balance: {{balance}} ᙢ</p>
       <p>You have currently {{staked_amount}} Staked Coins</p>
       <p>Staking Rate: {{staking_rate * 100}}%</p>
-      <p>Unstaking Status</p>
+      <p id="unstake1"> You have to wait </p>
       <div id="countdown"></div>
+      <p id="unstake2"> Before you can unstake</p>
       <div class="text-center">
       <form method="POST" action="{{ url_for('staking') }}">
         <label>Enter the number of coins you want to stake or unstake</label>
         <br>
         <input type="text" name="stake_amount">
         <br>
-        <button class="btn stake-button" type="submit" name="stake" value="Stake" >Stake</button>
-        <button class="btn stake-button" type="submit" name="unstake" value="Unstake">Unstake</button>
+        <button class="btn" type="submit" name="stake" value="Stake" >Stake</button>
+        <button class="btn" id="unstake_button" type="submit" name="unstake" value="Unstake">Unstake</button>
       </form>
     </div>
     </div>
@@ -90,22 +94,20 @@
         if (timeLeft <= 0) {
             clearInterval(timer);
             document.getElementById("countdown").innerHTML = "You can unstake now";
-            var element = document.getElementsByClassName("stake-button")
-            for (var i = 0; i < element.length; i++) {
-                element[i].style.backgroundColor = "#0096c9";
-                element[i].disabled = false;
-            }
+            document.getElementById("unstake1").style.display = "none";
+            document.getElementById("unstake2").style.display = "none";
+            var element = document.getElementById("unstake_button");
+            element.style.backgroundColor = "#0096c9";
+            element.disabled = false;
         } else {
             var seconds = Math.floor((timeLeft / 1000) % 60);
             var minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
             var hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
             var days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
             document.getElementById("countdown").innerHTML = days + " days " + hours + " hours " + minutes + " minutes " + seconds + " seconds ";
-            var element = document.getElementsByClassName("stake-button")
-            for (var i = 0; i < element.length; i++) {
-                element[i].style.backgroundColor = "red";
-                element[i].disabled = true;
-            }
+            var element = document.getElementById("unstake_button");
+            element.style.backgroundColor = "red";
+            element.disabled = true;
             timeLeft -= 1000;
         }
     }, 1000);

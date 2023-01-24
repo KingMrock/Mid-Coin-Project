@@ -52,7 +52,7 @@ class BlockChain (object):
         self.stake = Staking()
         god = User("God", curve.get_generator() * 1)
         god.balance = 500
-        bonus = User("Bonus", curve.get_generator() * 2)
+        bonus = User("bonus", curve.get_generator() * 2)
         bonus.balance = 0
         self.users.append(god)
         self.users.append(bonus)
@@ -66,8 +66,13 @@ class BlockChain (object):
     def add_user(self, user: User):
         self.users.append(user)
         self.stake.add_user(user)
-        if self.get_user_by_name("God").balance > 0:
+        if self.get_user_by_name("God").balance >= 5:
             self.make_transaction(self.get_user_by_name("God").pubkey, 1, user.pubkey, 5)
+            self.mine()
+        elif self.get_user_by_name("God").balance < 0:
+            self.save_to_file('blockchain.txt')
+        elif self.get_user_by_name("God").balance < 5:
+            self.make_transaction(self.get_user_by_name("God").pubkey, 1, user.pubkey, self.get_user_by_name("God").balance)
             self.mine()
 
     def get_user(self, public_key):
@@ -123,11 +128,13 @@ class BlockChain (object):
 
         new_block = Block(previous_hash, self.pending_transactions)
         new_block.miner = miner
-        new_block.reward = 2 + self.get_user_by_name("Bonus").balance
 
         if miner is not self.get_user_by_name("God"):
-            miner.balance += (2 + self.get_user_by_name("Bonus").balance)
-            self.get_user_by_name("Bonus").balance = 0
+            new_block.reward = 2 + self.get_user_by_name("bonus").balance
+            miner.balance += (2 + self.get_user_by_name("bonus").balance)
+            self.get_user_by_name("bonus").balance = 0
+        else:
+            new_block.reward = 0
         self.blocks.append(new_block)
         self.pending_transactions = []
         #Save the blockchain
@@ -323,5 +330,3 @@ class BlockChain (object):
         self.stop_event.set()
         self.thread.start()
         """
-
-
