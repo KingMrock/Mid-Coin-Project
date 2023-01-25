@@ -85,11 +85,6 @@
     <div class="d-flex flex-column main-view">
       <h1>Welcome, {{username}}</h1>
       <p>Balance: {{balance}}</p>
-      <form method="POST" action="{{ url_for('latest_transactions') }}">
-        <label>Enter the number of transactions you want to see:</label>
-        <input type="text" name="num_transaction">
-        <input type="submit" value="Submit">
-      </form>
         <div class="transaction-container">
         {% for transaction in transactions %}
             {% if transaction['sender'] == session['username'] %}
@@ -99,6 +94,7 @@
             {% endif %}
         {% endfor %}
         </div>
+        <button id="more_button" class="btn" onclick ="location.href='/latest_transaction?num_transaction='+numTransactions;"> See 5 More transactions </button>
     </div>
   </body>
 

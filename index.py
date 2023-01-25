@@ -215,29 +215,24 @@ def read_string_coordinates(string):
 @app.route('/latest_transactions', methods=['POST','GET'])
 def latest_transactions():
     if "username" in session:
-
         if request.method == "POST":
             if "dashboard" in request.form:
                 return redirect(url_for('dashboard'))
             elif "logout" in request.form:
                 return redirect(url_for('logout'))
-            elif "num_transaction" in request.form:
-                num_transaction = request.form["num_transaction"]
-                try:
-                    num_transaction = int(num_transaction)
-                except:
-                    flash("Invalid number of transactions")
-                    return redirect(url_for('latest_transactions'))
-                transactions_signed = blockchain.get_last_x_transaction(blockchain.get_user_by_name(session["username"]),num_transaction)
-                transactions = []
-                for transaction in transactions_signed:
-                    transaction = transaction[0]
-                    transactions.append({'sender': transaction.sender.name, 'amount': transaction.amount, 'receiver': transaction.receiver.name})
-                return render_template("latest_transactions.html", balance=blockchain.get_user_by_name(session["username"]).balance,
-                                       username=session["username"], transactions=transactions)
-        else:
-            return render_template("latest_transactions.html", balance=blockchain.get_user_by_name(session["username"]).balance,
-                                       username=session["username"])
+        num_transaction = request.args.get('num_transaction') or 5
+        try:
+            num_transaction = int(num_transaction)
+        except:
+            flash("Invalid number of transactions")
+            return redirect(url_for('latest_transactions'))
+        transactions_signed = blockchain.get_last_x_transaction(blockchain.get_user_by_name(session["username"]),num_transaction)
+        transactions = []
+        for transaction in transactions_signed:
+            transaction = transaction[0]
+            transactions.append({'sender': transaction.sender.name, 'amount': transaction.amount, 'receiver': transaction.receiver.name})
+        return render_template("latest_transactions.html", balance=blockchain.get_user_by_name(session["username"]).balance,
+                               username=session["username"], transactions=transactions)
     else:
         return redirect(url_for('homepage'))
 
