@@ -89,7 +89,9 @@
           <div class="faq">
             <div class="question">What makes the blockchain valid ? ➔</div>
             <div class="answer">To ensure the blockchain is valid we check that for every transaction in a block the signature corresponds to the transaction.
-            Then we make sure that the block have the hash of the previous block, this ensures that none of the block are falsified</div>
+            Then we make sure that the block have the hash of the previous block, this ensures that none of the block are falsified
+            </div>
+          </div>
           <div class="faq">
             <div class="question">What is staking ? ➔</div>
             <div class="answer">Currently staking allows you to get a chance to win a raffle each time a block is mined.
@@ -98,8 +100,38 @@
             The raffle amount is 2 ᙢ plus whatever fast transaction amount is paid.
             We plan to make staking available only to user who host the blockchain, so enjoy the free coin while it lasts</div>
           </div>
+            <div class="faq">
+            <div class="question">What is the cost for posting a message in the blockchain ? ➔</div>
+            <div class="answer">Right now the formula to calculate the cost of the message is (len(message)/60) * 0.1 + 0.1 ᙢ
+            <br>
+                This means that the cost of a message is 0.1 ᙢ + 0.1 ᙢ for every sixty characters of the message.
+            </div>
+            </div>
+            <div class="faq">
+            <div class="question">Who is this God who sent me 5 ᙢ ? ➔</div>
+            <div class="answer">It is me, the creator of this blockchain, I wanted to give you a head start as an early adopter, so you can play with the blockchain.
+            </div>
           </div>
-
+            <div class="faq">
+            <div class="question">The notification for the transaction doesn't seem to work correctly ➔</div>
+            <div class="answer"> Make sure that you don't have two tabs open, the notification will only be sent once. So you might miss it on your current window
+            </div>
+          </div>
+            </div>
+            <div class="faq">
+            <div class="question">How to verify a message or transaction ➔</div>
+            <div class="answer"> You can publicly access the blockchain and verify the message or transaction by yourself.
+            <br>
+                To verify if a transaction is valid, simply paste the whole transaction or message from the username to the end like this:
+                <br>
+                New_user: X: 81178126;Y: 1658705894 -> God: X: 2980316102;Y: 995038408 : 0.01 Mid£Coin
+                And paste the signature, a tuple of two numbers (1400028276, 3538676819)
+                <br>
+                Then click on the verify button, and it will tell you if the signature is valid or not.
+                This is based on the Diffie-Hellman key exchange algorithm.
+                To learn more visit https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman
+            </div>
+          </div>
         </div>
     </div>
 </body>

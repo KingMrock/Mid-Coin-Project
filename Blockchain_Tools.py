@@ -36,7 +36,7 @@ class Transaction:
         self.status = status
 
     def __str__(self):
-        return str(self.sender) + " -> " + str(self.receiver) + " : " + str(self.amount) + " MidlCoin"
+        return str(self.sender) + " -> " + str(self.receiver) + " : " + str(self.amount) + " Mid£Coin"
 
     def __eq__(self, other):
         return self.sender == other.sender and self.receiver == other.receiver and self.amount == other.amount

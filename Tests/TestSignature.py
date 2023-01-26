@@ -14,13 +14,13 @@ from Field import Zn
 def test_fixed_k(size = 1001):
     # Define the curve parameters
     #F = Z_nZ(130127)
-    p = 20333
-    a = Zn(0, p)
-    b = Zn(7, p)
+    p = 4199630627
+    a = Zn(2, p)
+    b = Zn(2, p)
     # Create the curve object
     curve = EllipticCurve(a, b)
-    curve.set_generator(CurvePoint(Zn(15377, p), Zn(20134, p), curve))
-    curve.set_order(3389)
+    curve.set_generator(CurvePoint(Zn(2980316102, p), Zn(995038408, p), curve))
+    curve.set_order(4199701861)
     #curve.set_generator(CurvePoint(F(7), F(42), curve))
     #curve.set_order(102)
 

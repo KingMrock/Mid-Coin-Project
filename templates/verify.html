@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns="">
+<head>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
+
+
+     <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <style>
+         .main-view {
+            background: linear-gradient(to bottom, #1c1c1c, #2b2b2b);
+            background-size: cover;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+      }
+        h1 {
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000000;
+        }
+        .btn-custom {
+            background-color: #0096c9;
+            color: white;
+            font-weight: bold;
+            border-radius: 20px;
+            padding: 10px 20px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-custom:hover {
+            background-color: #007e9e;
+            color: white;
+            cursor: pointer;
+        }
+
+
+    #toast-container > div {
+        opacity:1;
+        close-button: true;
+    }
+    #toast-container > .toast-success {
+        background-color: green;
+    }
+
+    #toast-container > .toast-info {
+        background-color: blue;
+    }
+}
+    </style>
+
+</head>
+
+<body onload="onLoad()">
+    {% if username != "God" %}
+        <nav id="connected" class="navbar navbar-dark bg-dark">
+          <a class="navbar-brand" href="#">Mid£Coin</a>
+          <form class="form-inline" method="get" action="/dashboard">
+            <button class="btn-custom" type="submit">Dashboard</button>
+          </form>
+          <form class="form-inline" method="post" action="/logout">
+            <button class="btn-custom" type="submit">Logout</button>
+          </form>
+        </nav>
+    {% endif %}
+    {% if username == "God" %}
+        <nav id="not_connected" class="navbar navbar-dark bg-dark">
+          <a class="navbar-brand" href="#">Mid£Coin</a>
+            <form class="form-inline" method="get" action="/">
+                <button class="btn-custom" type="submit">Homepage</button>
+            </form>
+        </nav>
+    {% endif %}
+
+    <div class="d-flex flex-column main-view">
+      <h1>Verify the validity of a transaction or a message</h1>
+        <form action="#" method="post">
+            <div class="d-flex flex-column form-group">
+                <label for="transaction">Enter The transaction or message here</label>
+                <textarea type="text" class = form-control" name="transaction" value="" cols="80"> </textarea>
+                <label for="signature">Enter the signature here</label>
+                <textarea type="text" class = form-control" name="signature" value= "" cols="80"> </textarea>
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                <div class="alert alert-danger" role="alert">
+                    {% for message in messages %}
+                    {{ message }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+                {% endwith %}
+            <button type="submit" class="btn-custom">Verify the transaction</button>
+            </div>
+        </form>
+        <div id="verification-result">{{reply}}</div>
+    </div>
+
+</body>
+
+<script>
+function onLoad() {
+var reply = "{{reply}}";
+if (reply == "null") {
+        document.getElementById("verification-result").style.display = "none";
+}
+else{
+    var last_word = reply.split(" ")[reply.split(" ").length - 2];
+    if (last_word === "Valid") {
+        document.getElementById("verification-result").style.background = "green";
+    }
+    else {
+        document.getElementById("verification-result").style.background = "red";
+    }
+}
+}
+</script>
+</html>
+

@@ -24,15 +24,18 @@ class Block (object):
 
     def __str__(self):
         transactions = ""
-        messages = "\n Messages in this block:\n"
+        if not self.messages:
+            messages = "\n"
+        else:
+            messages = "\nMessages in this block:\n"
         for transaction in self.transactions:
             transactions += (str(transaction[0]) + " Signature: " + str(transaction[1]) + "\n")
         for message in self.messages:
-            messages += (str(message[0]) + " Signature: " + str(message[1]) + "\n")
+            messages += message[0] + " Signature: " + str(message[1]) + "\n"
         return "Block Hash:" + str(self.hash) + \
                "\nPrevious Hash: " + str(self.previous_hash) + \
                "\nTransaction in this block:\n" + transactions + messages + \
-               "Mined by: " + str(self.miner) + "Reward: " + str(self.reward)
+               "Mined by: " + str(self.miner) + " Reward: " + str(self.reward)
 
     def __eq__(self, other):
         return self.hash == other.hash
@@ -140,6 +143,7 @@ class BlockChain (object):
                 transaction[0].sender.balance -= transaction[0].amount
                 transaction[0].receiver.balance += transaction[0].amount
                 transaction[0].status = "Complete"
+
 
         new_block = Block(previous_hash, self.pending_transactions, self.pending_messages)
         new_block.miner = miner
@@ -324,13 +328,14 @@ class BlockChain (object):
         cost = calculate_cost(message)
         if fast:
             cost *= 1.05
-        print("Here")
+        message = str(by) + " :" + message
+        print(message)
         try:
-            print(sender, privkey, by.pubkey, cost)
             self.make_transaction(sender, privkey, self.get_user_by_name("bonus").pubkey, cost)
         except:
             raise Exception("Not enough balance")
         signature_message = sign(self.curve, privkey, message)
+        print(verify(self.curve, by.pubkey, message, signature_message))
         self.pending_messages.append((message, signature_message))
         return message, signature_message
 

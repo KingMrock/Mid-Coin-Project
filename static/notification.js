@@ -1,3 +1,6 @@
+let waitingForResponse = false;
+
+
 setInterval(function() {
     fetch('/notification')
     .then(function(response) {
@@ -5,7 +8,6 @@ setInterval(function() {
     })
     .then(function(data) {
         if (data['status'] == "Complete") {
-            console.log("Transaction Complete");
             toastr.success("Transaction of " + data.amount + " ᙢ to " + data.receiver + " is complete");
         }
         else if (data['status'] == "Denied") {
@@ -35,4 +37,4 @@ setInterval(function() {
             null;
         }
     });
-}, 4000)
+}, 10000)

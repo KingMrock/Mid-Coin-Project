@@ -1,8 +1,10 @@
-from flask import Flask, request, render_template, make_response, redirect, session, url_for, flash, send_file
+from flask import Flask, request, render_template, make_response, redirect, session, url_for, flash, send_file, jsonify
 from Block import *
 from flask_qrcode import QRcode
 from Field import Zn
 import os
+import re
+from Signature import verify
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
@@ -164,8 +166,8 @@ def send():
                 return redirect(url_for('send'))
             if blockchain.get_user_by_name(username).balance < amount:
                 flash("Insufficient funds")
-            elif amount <= 0:
-                flash("Invalid amount")
+            elif amount < 0.00001:
+                flash("Invalid Amount, Minimum Amount is 0.00001")
             elif blockchain.get_user(recipient) is None:
                 flash("Invalid recipient")
             elif blockchain.get_user(recipient).name == username:
@@ -286,7 +288,8 @@ def check_transaction_status():
         if str(trans) == session["latest_transaction"]:
             if trans.status == "Denied" or trans.status == "Complete":
                 session["latest_transaction"] = None
-                resp = {'status': trans.status, 'amount': trans.amount, 'receiver': trans.receiver.name}
+                resp = {'status': trans.status, 'amount': '{:f}'.format(trans.amount), 'receiver': trans.receiver.name}
+                print(resp)
                 return make_response(resp)
     return make_response({'status': "Pending"})
 
@@ -317,6 +320,29 @@ def information():
     else:
         return render_template("information.html", username="God")
 
+@app.route('/verify_page', methods=['POST','GET'])
+def verify_page():
+    if "username" in session:
+        username = session["username"]
+    else:
+        username = "God"
+    if request.method == "POST":
+        if "dashboard" in request.form:
+            return redirect(url_for('dashboard'))
+        elif "logout" in request.form:
+            return redirect(url_for('logout'))
+        elif "homepage" in request.form:
+            return redirect(url_for('homepage'))
+        else:
+            transaction = request.form["transaction"]
+            signature = request.form["signature"]
+            #Call verify function
+            reply = verify_function(transaction, signature)
+            answer = transaction + signature + ": " + reply
+            return render_template("verify.html", reply=answer, username=username)
+    else:
+        return render_template("verify.html", username=username, reply="null")
+
 
 @app.route('/message', methods=['POST','GET'])
 def message():
@@ -328,10 +354,8 @@ def message():
                 return redirect(url_for('logout'))
             else:
                 message = request.form["messageInput"]
-                print(message)
                 fast = request.form.get("fast_transaction")
                 try:
-                    print(blockchain.get_user_by_name(session["username"]).pubkey, session["privkey"], message)
                     blockchain.add_message(blockchain.get_user_by_name(session["username"]).pubkey, session["privkey"], message, fast=True)
                 except:
                     flash("Invalid message")
@@ -342,6 +366,170 @@ def message():
         return render_template("message.html", username=session["username"], balance=blockchain.get_user_by_name(session["username"]).balance)
     else:
         return redirect(url_for('homepage'))
+
+
+def verify_function(transaction, signature):
+    match = re.search(r"X: (\d+);Y: (\d+) ", transaction)
+    if match:
+        x = match.group(1)
+        y = match.group(2)
+    else:
+        return "Invalid public key"
+    try:
+        x = int(x)
+        y = int(y)
+        field = blockchain.curve.get_a().p
+        pub_key = CurvePoint(Zn(x, field), Zn(y, field), blockchain.curve)
+    except:
+        return "Invalid public key"
+
+    match = re.search(r"(\d+), (\d+)", signature)
+    if match:
+        signature = (int(match.group(1)), int(match.group(2)))
+    else:
+        return "Invalid signature"
+
+    print(pub_key, signature)
+    if verify(blockchain.curve, pub_key, transaction, signature) or verify(blockchain.curve, pub_key, transaction[1:], signature):
+        return "Valid Transaction"
+    else:
+        return "Invalid Transaction"
+
+@app.route('/send_api', methods=['POST'])
+def send_api():
+    """
+    API for sending coins
+    :return: JSON response with status of transaction
+    JSON format:
+    {
+        "x": receiver's public key x value,
+        "y": receiver's public key y value,
+        "amount": amount of coins to send,
+        "privkey": sender's private key
+    """
+    if request.method == "POST":
+        try:
+            x = request.json.get("x")
+            y = request.json.get("y")
+            x = int(x)
+            y = int(y)
+            field = blockchain.curve.get_a().p
+            receiver = CurvePoint(Zn(x, field), Zn(y, field), blockchain.curve)
+        except:
+            return make_response("Invalid public key")
+
+        try:
+            private_key = int(request.json.get("private_key"))
+            sender = private_key * blockchain.curve.get_generator()
+        except:
+            return make_response("Invalid private key")
+        try:
+            amount = float(request.json.get("amount"))
+        except:
+            return make_response("Invalid amount")
+        if amount < 0.00001 or amount > blockchain.get_user_by_pubkey(sender).balance:
+            return make_response("Invalid amount")
+        try:
+            blockchain.make_transaction(sender, private_key, receiver, amount)
+        except:
+            return make_response("Invalid transaction")
+        return make_response("Sent")
+    else:
+        return redirect(url_for('homepage'))
+
+
+@app.route('/stake_api', methods=['POST'])
+def stake_api():
+    """
+    API allowing the user to stake coins
+    :return: "Staked" if successful, "Invalid amount" if invalid amount, "Insufficient funds" if insufficient funds
+    The JSON must contain the following:
+    "private_key": The private key of the user
+    "amount": The amount of coins to stake
+    """
+    if request.method == "POST":
+        try:
+            private_key = int(request.json.get("private_key"))
+            public_key = private_key * blockchain.curve.get_generator()
+        except:
+            return make_response("Invalid private key")
+        try:
+            amount = float(request.json.get("amount"))
+        except:
+            return make_response("Invalid amount")
+        if amount < 0.00001 or amount > blockchain.get_user_by_pubkey(public_key).balance:
+            return make_response("Invalid amount")
+        try:
+            blockchain.stake.stake_coins(blockchain.get_user(public_key), amount)
+        except:
+            return make_response("Invalid transaction")
+        return make_response("Staked")
+    else:
+        return redirect(url_for('homepage'))
+
+
+@app.route('/unstake_api', methods=['POST'])
+def unstake_api():
+    """
+    API allowing the user to unstake coins
+    :return: "Unstaked" if successful, "Invalid amount" if invalid amount, "Insufficient funds" if insufficient funds
+    The JSON must contain the following:
+    "private_key": The private key of the user
+    "amount": The amount of coins to unstake
+    """
+    if request.method == "POST":
+        try:
+            private_key = int(request.json.get("private_key"))
+            public_key = private_key * blockchain.curve.get_generator()
+        except:
+            return make_response("Invalid private key")
+        try:
+            amount = float(request.json.get("amount"))
+        except:
+            return make_response("Invalid amount")
+        if amount < 0.00001 or amount > blockchain.stake.get_staked_coins(blockchain.get_user(public_key)):
+            return make_response("Invalid amount")
+        if blockchain.stake.unstake_coins(blockchain.get_user(public_key), amount):
+            return make_response("Unstaked")
+        else:
+            return make_response("You cannot unstake coins right now")
+    else:
+        return redirect(url_for('homepage'))
+
+
+@app.route('/add_user_api', methods=['POST'])
+def add_user_api():
+    """
+    API for adding a user
+    :return: JSON response with private key and public key or error message
+    Input: username
+    """
+    if request.method == "POST":
+        username = request.json.get("username")
+        if blockchain.get_user_by_name(username):
+            return make_response("Username already exists")
+        found = False
+        while not found:
+            privatekey = random.randint(3, blockchain.curve.get_order() - 1)
+            publickey = privatekey * blockchain.curve.get_generator()
+            found = blockchain.get_user(publickey) is None
+        user = User(username, publickey)
+        try:
+            blockchain.add_user(user, privatekey)
+        except:
+            return make_response("User cannot be added")
+        return jsonify({"private_key": privatekey,
+                        "public_key": {"x": publickey.get_x().get_n(), "y": publickey.get_y().get_n()}})
+    else:
+        return redirect(url_for('homepage'))
+
+@app.route('/verify_message_api', methods=['POST'])
+def verify_message_api():
+    if request.method == "POST":
+        make_response(verify_function(request.json.get("transaction"), request.json.get("signature")))
+    else:
+        return redirect(url_for('homepage'))
+
 
 
 if __name__ == '__main__':
