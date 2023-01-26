@@ -50,6 +50,11 @@
         background-color: blue;
     }
 
+  .button_container {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+  }
+
 
 
     </style>
@@ -67,18 +72,21 @@
       <img src="{{ qrcode(pubkey, box_size=10, error_correction='H', back_color='#1c1c1c', fill_color='#0096c9') }}" alt="QR Code">
       <div style="height: 10px;"></div>
       <h4>Public Key: {{pubkey}}</h4>
-      <a href="/latest_transactions" class="btn btn-primary"> Recent Transactions</a>
-      <button class="btn btn-primary" onclick="downloadBlockchain()">Download Blockchain</button>
-<script>
-    function downloadBlockchain() {
-        window.location.href = '/download-blockchain';
-    }
-</script>
-
-      <a href="/send" class="btn btn-primary">Make Transaction</a>
-      <a href="/staking" class="btn btn-primary">Staking</a>
-      <a href="/information" class="btn btn-custom"> Information</a>
+      <div class="button_container">
+        <a href="/latest_transactions" class="btn btn-primary"> Recent Transactions</a>
+        <button class="btn btn-primary" onclick="downloadBlockchain()">Download Blockchain</button>
+  <script>
+      function downloadBlockchain() {
+          window.location.href = '/download-blockchain';
+      }
+  </script>
+        <a href="/send" class="btn btn-primary">Make Transaction</a>
+        <a href="/staking" class="btn btn-primary">Staking</a>
+        <a href="/information" class="btn btn-custom"> Information</a>
+        <a href="/message" class="btn btn-custom"> Add  Message</a>
+      </div>
     </div>
+
   </body>
 
 

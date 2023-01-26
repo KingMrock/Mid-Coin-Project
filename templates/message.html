@@ -52,9 +52,7 @@
         background-color: blue;
     }
 
-
-
-.checkbox-container input[type="checkbox"] {
+    .checkbox-container input[type="checkbox"] {
     display: none;
 }
 
@@ -85,6 +83,21 @@
     margin: 10px;
 }
 
+
+    .black-white {
+    color: white;
+    background-color: black;
+    outline: 3px solid #0096c9;
+}
+
+    textarea:focus, input:focus{
+    color: white !important;
+    background-color: black !important;
+    outline: 3px solid #0096c9 !important;
+    }
+}
+
+
     </style>
 
 </head>
@@ -101,22 +114,16 @@
  </nav>
 
     <div class="d-flex flex-column main-view">
-      <h1>Transaction Page</h1>
+      <h1>Add a message to the chain</h1>
       <h2> {{username}} </h2>
         <h3> Your Balance : {{balance}} ᙢ</h3>
         <form action="#" method="post">
             <div class="d-flex flex-column form-group">
-                <label for="amount">Amount</label>
-                <input type="text" class="form-control" name="amount">
-                <hr>
-                <h5>Send to:</h5>
-                <label for="x">X value</label>
-                <input type="text" class = form-control" name="x" value="{{ session.get('x') }}">
-                <label for="y">Y value</label>
-                <input type="text" class = form-control" name="y" value= "{{ session.get('y') }}">
+                <textarea id="messageInput" class="form-control black-white" name="messageInput" rows="3"></textarea>
+                <p>Cost: <span id="costOutput"></span></p>
                 <div class="checkbox-container">
                     <input type="checkbox" id="fast_transaction" name="fast_transaction" value="true">
-                    <label for="fast_transaction"> Do you want to enable direct transaction (it will cost you 5% of the transaction amount)</label>
+                    <label for="fast_transaction"> Do you want to send the message directly (it will cost you 5% of the transaction amount)</label>
                 </div>
                 {% with messages = get_flashed_messages() %}
                 {% if messages %}
@@ -127,12 +134,23 @@
                   </div>
                 {% endif %}
                 {% endwith %}
-            <button type="submit" class="btn btn-primary">Make Transaction</button>
+            <button type="submit" class="btn btn-primary">Send Message</button>
             </div>
         </form>
-      <a href="/qr_scan" class="btn btn-primary">Scan QR Code</a>
     </div>
 
 </body>
 </html>
+
+<script>
+    let input = document.getElementById("messageInput");
+
+input.addEventListener("input", function() {
+  let messageLength = input.value.length;
+  let cost = Math.floor(messageLength/60) * 0.1 +0.1;
+  costOutput.innerHTML = cost.toFixed(2) + "ᙢ";
+});
+
+
+</script>
 

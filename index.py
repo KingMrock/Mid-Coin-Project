@@ -15,13 +15,13 @@ QRcode(app)
 if os.path.exists("blockchain.txt"):
     blockchain = BlockChain.load_from_file("blockchain.txt")
 else:
-    p = 20333
-    a = Zn(0, p)
-    b = Zn(7, p)
+    p = 4199630627
+    a = Zn(2, p)
+    b = Zn(2, p)
     # Create the curve object
     curve = EllipticCurve(a, b)
-    curve.set_generator(CurvePoint(Zn(15377, p), Zn(20134, p), curve))
-    curve.set_order(3389)
+    curve.set_generator(CurvePoint(Zn(2980316102, p), Zn(995038408, p), curve))
+    curve.set_order(4199701861)
     blockchain = BlockChain(curve)
 
 @app.route('/')
@@ -316,6 +316,33 @@ def information():
         return render_template("information.html", username=session["username"])
     else:
         return render_template("information.html", username="God")
+
+
+@app.route('/message', methods=['POST','GET'])
+def message():
+    if "username" in session:
+        if request.method == "POST":
+            if "dashboard" in request.form:
+                return redirect(url_for('dashboard'))
+            elif "logout" in request.form:
+                return redirect(url_for('logout'))
+            else:
+                message = request.form["messageInput"]
+                print(message)
+                fast = request.form.get("fast_transaction")
+                try:
+                    print(blockchain.get_user_by_name(session["username"]).pubkey, session["privkey"], message)
+                    blockchain.add_message(blockchain.get_user_by_name(session["username"]).pubkey, session["privkey"], message, fast=True)
+                except:
+                    flash("Invalid message")
+                    return redirect(url_for('message'))
+                flash("Message sent")
+                if fast == "true":
+                    blockchain.mine()
+        return render_template("message.html", username=session["username"], balance=blockchain.get_user_by_name(session["username"]).balance)
+    else:
+        return redirect(url_for('homepage'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)

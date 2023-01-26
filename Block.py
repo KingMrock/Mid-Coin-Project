@@ -10,9 +10,10 @@ from Signature import verify, sign
 import pickle
 
 class Block (object):
-    def __init__(self, previous_hash: str, transactions: List[Tuple[Transaction, Tuple[int, int]]]):
+    def __init__(self, previous_hash: str, transactions: List[Tuple[Transaction, Tuple[int, int]]], messages: List[Tuple[str, Tuple[int, int]]] = None):
         self.previous_hash = previous_hash
         self.transactions = transactions
+        self.messages = messages
         self.data = str(previous_hash) + str(transactions)
         self.hash = str(Hash(self.data))
         self.miner = None
@@ -23,18 +24,22 @@ class Block (object):
 
     def __str__(self):
         transactions = ""
+        messages = "\n Messages in this block:\n"
         for transaction in self.transactions:
             transactions += (str(transaction[0]) + " Signature: " + str(transaction[1]) + "\n")
+        for message in self.messages:
+            messages += (str(message[0]) + " Signature: " + str(message[1]) + "\n")
         return "Block Hash:" + str(self.hash) + \
                "\nPrevious Hash: " + str(self.previous_hash) + \
-               "\nTransaction in this block:\n" + transactions + \
+               "\nTransaction in this block:\n" + transactions + messages + \
                "Mined by: " + str(self.miner) + "Reward: " + str(self.reward)
 
     def __eq__(self, other):
         return self.hash == other.hash
 
     def __getstate__(self):
-        return {'previous_hash': self.previous_hash, 'transactions': self.transactions, 'data': self.data, 'hash': self.hash, 'miner': self.miner, 'reward': self.reward}
+        return {'previous_hash': self.previous_hash, 'transactions': self.transactions, 'data': self.data,
+                'hash': self.hash, 'miner': self.miner, 'reward': self.reward, 'messages': self.messages}
 
     def __setstate__(self, state):
         self.__init__(state['previous_hash'], state['transactions'])
@@ -42,6 +47,15 @@ class Block (object):
         self.hash = state['hash']
         self.miner = state['miner']
         self.reward = state['reward']
+        self.messages = state['messages']
+
+
+def calculate_cost(message):
+    """
+    Calculates the cost of a message
+    """
+    return (len(message) // 60) * 0.1 + 0.1
+
 
 class BlockChain (object):
     def __init__(self, curve: EllipticCurve):
@@ -49,6 +63,7 @@ class BlockChain (object):
         self.blocks = []
         self.users = []
         self.pending_transactions = []
+        self.pending_messages = []
         self.stake = Staking()
         god = User("God", curve.get_generator() * 1)
         god.balance = 500
@@ -126,7 +141,7 @@ class BlockChain (object):
                 transaction[0].receiver.balance += transaction[0].amount
                 transaction[0].status = "Complete"
 
-        new_block = Block(previous_hash, self.pending_transactions)
+        new_block = Block(previous_hash, self.pending_transactions, self.pending_messages)
         new_block.miner = miner
 
         if miner is not self.get_user_by_name("God"):
@@ -137,6 +152,7 @@ class BlockChain (object):
             new_block.reward = 0
         self.blocks.append(new_block)
         self.pending_transactions = []
+        self.pending_messages = []
         #Save the blockchain
         self.save_to_file('blockchain.txt')
         return new_block
@@ -158,7 +174,8 @@ class BlockChain (object):
 
     def make_transaction(self, sender, privkey, receiver, amount):
         """
-        Creates a transaction and signs it with the private key of the sender
+        Creates a transaction and signs it with the private key of the sender.
+        Sender and receiver are the PUBLIC KEYS of the users
         """
         by = self.get_user(sender)
         to = self.get_user(receiver)
@@ -223,7 +240,6 @@ class BlockChain (object):
         """
         with open(file_path, 'rb') as f:
             return pickle.load(f)
-
 
     def get_last_x_transaction(self, user, number):
         """
@@ -291,7 +307,6 @@ class BlockChain (object):
                     blockchain.add_transaction(Transaction(sender, receiver, amount))
         return blockchain
 
-
     def stop_timer(self):
         """
         Stops the timer thread
@@ -299,6 +314,25 @@ class BlockChain (object):
         self.stop_event.clear()
         self.thread.join()
 
+    def add_message(self, sender, privkey, message, fast=False):
+        """
+        Adds a message to the blockchain
+        """
+        by = self.get_user(sender)
+        if by is None:
+            raise Exception("User not found")
+        cost = calculate_cost(message)
+        if fast:
+            cost *= 1.05
+        print("Here")
+        try:
+            print(sender, privkey, by.pubkey, cost)
+            self.make_transaction(sender, privkey, self.get_user_by_name("bonus").pubkey, cost)
+        except:
+            raise Exception("Not enough balance")
+        signature_message = sign(self.curve, privkey, message)
+        self.pending_messages.append((message, signature_message))
+        return message, signature_message
 
     def print_users(self):
         """
