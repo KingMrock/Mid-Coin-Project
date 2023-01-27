@@ -1,5 +1,7 @@
 from Point import CurvePoint
 from datetime import datetime, timedelta
+from Signature import *
+import re
 
 class User:
     def __init__(self, name: str, pubkey: CurvePoint):
@@ -102,3 +104,31 @@ class Staking:
 
     def __getstate__(self):
         return {'users': self.users, 'total_staked_coins': self.total_staked_coins, 'unstaking_period': self.unstaking_period}
+
+
+def verify_function(curve, transaction, signature):
+    match = re.search(r"X: (\d+);Y: (\d+) ", transaction)
+    if match:
+        x = match.group(1)
+        y = match.group(2)
+    else:
+        return "Invalid public key"
+    try:
+        x = int(x)
+        y = int(y)
+        field = curve.get_a().p
+        pub_key = CurvePoint(Zn(x, field), Zn(y, field), curve)
+    except:
+        return "Invalid public key"
+
+    match = re.search(r"(\d+), (\d+)", signature)
+    if match:
+        signature = (int(match.group(1)), int(match.group(2)))
+    else:
+        return "Invalid signature"
+
+    print(pub_key, signature)
+    if verify(curve, pub_key, transaction, signature) or verify(curve, pub_key, transaction[1:], signature):
+        return "Valid Transaction"
+    else:
+        return "Invalid Transaction"

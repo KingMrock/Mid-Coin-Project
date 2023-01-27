@@ -37,6 +37,8 @@ class Block (object):
                "\nTransaction in this block:\n" + transactions + messages + \
                "Mined by: " + str(self.miner) + " Reward: " + str(self.reward)
 
+
+
     def __eq__(self, other):
         return self.hash == other.hash
 
@@ -369,3 +371,4 @@ class BlockChain (object):
         self.stop_event.set()
         self.thread.start()
         """
+

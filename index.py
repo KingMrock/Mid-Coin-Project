@@ -531,6 +531,34 @@ def verify_message_api():
         return redirect(url_for('homepage'))
 
 
+@app.route('/get_balance_api', methods=['POST'])
+def get_balance_api():
+    if request.method == "POST":
+        try:
+            x = request.json.get("x")
+            y = request.json.get("y")
+            x = int(x)
+            y = int(y)
+            field = blockchain.curve.get_a().p
+            public_key = CurvePoint(Zn(x, field), Zn(y, field), blockchain.curve)
+        except:
+            return make_response("Invalid public key")
+        return make_response(blockchain.get_user_by_pubkey(public_key).balance)
+    else:
+        return redirect(url_for('homepage'))
+
+@app.route('/get_random_api', methods=['GET'])
+def get_random_api():
+    if request.method == "GET":
+        try:
+            publickey = random.choice(blockchain.users).get_public_key()
+        except:
+            return make_response("No user found")
+        return make_response(jsonify({"x": publickey.get_x().get_n(), "y": publickey.get_y().get_n()}))
+    else:
+        return redirect(url_for('homepage'))
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
