@@ -132,3 +132,45 @@ def verify_function(curve, transaction, signature):
         return "Valid Transaction"
     else:
         return "Invalid Transaction"
+
+def read_block(data):
+    lines = data.splitlines()
+    transactions = []
+    messages = []
+    block_hash = ""
+    previous_hash = ""
+    miner = ""
+    amount = 0
+    i = 0
+    while i < len(lines):
+        if lines[i].startswith("Block Hash: "):
+            block_hash = lines[i][12:]
+            i+=1
+        elif lines[i].startswith("Previous Hash: "):
+            previous_hash = lines[i][15:]
+            i+=1
+        elif lines[i].startswith("Transaction in this block:"):
+            while i < len(lines) and not lines[i].startswith("Message in this block"):
+                transaction = lines[i]
+                end_index = transaction.find("Mid£Coin") + len("Mid£Coin")
+                transaction_text = transaction[0:end_index]
+                signature_start_index = transaction.find("Signature:") + len("Signature:")
+                signature = transaction[signature_start_index:]
+                transactions.append((transaction_text, signature))
+                i += 1
+        elif lines[i].startswith("Messages in this block:"):
+            while i < len(lines) and not lines[i].startswith("Mined by: "):
+                message = lines[i]
+                end_index = message.find("Signature:") - 1
+                message_text = message[0:end_index]
+                signature_start_index = message.find("Signature:") + len("Signature:")
+                signature = message[signature_start_index:]
+                messages.append((message_text, signature))
+                i += 1
+        elif lines[i].startswith("Mined by: "):
+            miner = lines[i][10:]
+            amount = float(lines[i][lines[i].find("Reward:") + len("Reward: "):])
+            i += 1
+
+        calculated_hash = str(Hash(data[data.find("Block Hash: "), data.find("Mined by: ")]))
+        return block_hash, previous_hash, transactions, messages, miner, calculated_hash, amount

@@ -14,7 +14,17 @@ class Block (object):
         self.previous_hash = previous_hash
         self.transactions = transactions
         self.messages = messages
-        self.data = str(previous_hash) + str(transactions)
+
+        transaction_data = "Transaction in this block:\n"
+        if not self.messages:
+            messages_data = "\n"
+        else:
+            messages_data = "\nMessages in this block:\n"
+        for transaction in self.transactions:
+            transaction_data += (str(transaction[0]) + " Signature: " + str(transaction[1]) + "\n")
+        for message in self.messages:
+            messages_data += message[0] + " Signature: " + str(message[1]) + "\n"
+        self.data = "Previous Hash: " + str(self.previous_hash) + messages_data + transaction_data
         self.hash = str(Hash(self.data))
         self.miner = None
         self.reward = 0

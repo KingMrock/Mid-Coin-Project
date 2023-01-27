@@ -320,6 +320,12 @@ def information():
     else:
         return render_template("information.html", username="God")
 
+
+def verify_block(block_data):
+    block_hash, previous_hash, transactions, messages, miner, calculated_hash, amount = read_block()
+    return "Not Finished"
+
+
 @app.route('/verify_page', methods=['POST','GET'])
 def verify_page():
     if "username" in session:
@@ -337,7 +343,7 @@ def verify_page():
             transaction = request.form["transaction"]
             signature = request.form["signature"]
             #Call verify function
-            reply = verify_function(transaction, signature)
+            reply = verify_function(blockchain.curve, transaction, signature)
             answer = transaction + signature + ": " + reply
             return render_template("verify.html", reply=answer, username=username)
     else:
@@ -354,6 +360,9 @@ def message():
                 return redirect(url_for('logout'))
             else:
                 message = request.form["messageInput"]
+                if "Mined by: " in message or "Signature:" in message:
+                    flash("Invalid message, cannot contain 'Mined by: ' or 'Signature:'")
+                    return redirect(url_for('message'))
                 fast = request.form.get("fast_transaction")
                 try:
                     blockchain.add_message(blockchain.get_user_by_name(session["username"]).pubkey, session["privkey"], message, fast=True)
@@ -366,34 +375,6 @@ def message():
         return render_template("message.html", username=session["username"], balance=blockchain.get_user_by_name(session["username"]).balance)
     else:
         return redirect(url_for('homepage'))
-
-
-def verify_function(transaction, signature):
-    match = re.search(r"X: (\d+);Y: (\d+) ", transaction)
-    if match:
-        x = match.group(1)
-        y = match.group(2)
-    else:
-        return "Invalid public key"
-    try:
-        x = int(x)
-        y = int(y)
-        field = blockchain.curve.get_a().p
-        pub_key = CurvePoint(Zn(x, field), Zn(y, field), blockchain.curve)
-    except:
-        return "Invalid public key"
-
-    match = re.search(r"(\d+), (\d+)", signature)
-    if match:
-        signature = (int(match.group(1)), int(match.group(2)))
-    else:
-        return "Invalid signature"
-
-    print(pub_key, signature)
-    if verify(blockchain.curve, pub_key, transaction, signature) or verify(blockchain.curve, pub_key, transaction[1:], signature):
-        return "Valid Transaction"
-    else:
-        return "Invalid Transaction"
 
 @app.route('/send_api', methods=['POST'])
 def send_api():
@@ -436,6 +417,7 @@ def send_api():
         return make_response("Sent")
     else:
         return redirect(url_for('homepage'))
+
 
 
 @app.route('/stake_api', methods=['POST'])
